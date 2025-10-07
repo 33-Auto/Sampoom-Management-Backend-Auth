@@ -6,6 +6,7 @@ import com.sampoom.backend.auth.controller.dto.response.RefreshResponse;
 import com.sampoom.backend.auth.jwt.JwtProvider;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +20,12 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    @Value("${jwt.access-ttl-seconds}")
+    private int accessTokenExpiration;
+    @Value("${jwt.refresh-ttl-seconds}")
+    private int refreshTokenExpiration;
+
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshService;
     private final PasswordEncoder encoder = new BCryptPasswordEncoder();
@@ -50,7 +57,7 @@ public class AuthService {
                 .role(role)
                 .accessToken(access)
                 .refreshToken(refresh)
-                .expiresIn(3600)
+                .expiresIn(accessTokenExpiration)
                 .build();
     }
 
@@ -71,7 +78,7 @@ public class AuthService {
 
         return RefreshResponse.builder()
                 .accessToken(newAccess)
-                .expiresIn(3600)
+                .expiresIn(refreshTokenExpiration)
                 .refreshToken(newRefresh)
                 .build();
     }

@@ -2,9 +2,11 @@ package com.sampoom.backend.auth.service;
 
 import com.sampoom.backend.auth.domain.RefreshToken;
 import com.sampoom.backend.auth.repository.RefreshTokenRepository;
-import jakarta.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -52,6 +54,7 @@ public class RefreshTokenService {
                 });
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deleteAllByUser(Long userId) {
         repo.deleteByUserId(userId);
     }
