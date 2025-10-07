@@ -8,11 +8,14 @@ import com.sampoom.backend.auth.controller.dto.response.RefreshResponse;
 import com.sampoom.backend.auth.jwt.JwtProvider;
 import com.sampoom.backend.auth.service.AuthService;
 import io.jsonwebtoken.Claims;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -52,12 +55,24 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String auth) {
-        String token = auth.substring(7);
-        Claims claims = jwtProvider.parse(token); // JwtProvider가 내부 key로 검증
-        Long userId = Long.valueOf(claims.getSubject());
-        authService.logout(userId);
-        return ApiResponse.success_only(SuccessStatus.OK);
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
+        try {
+            String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(ErrorStatus.UNAUTHORIZED.getStatusCode())
+                        .body(ApiResponse.fail(ErrorStatus.UNAUTHORIZED.getStatusCode(), "토큰이 제공되지 않았습니다."));
+            }
+
+            String token = authHeader.substring(7);
+            Claims claims = jwtProvider.parse(token);
+            Long userId = Long.valueOf(claims.getSubject());
+
+            authService.logout(userId);
+            return ApiResponse.success_only(SuccessStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(ErrorStatus.UNAUTHORIZED.getStatusCode())
+                    .body(ApiResponse.fail(ErrorStatus.UNAUTHORIZED.getStatusCode(), "유효하지 않은 토큰입니다."));
+        }
     }
 
 }

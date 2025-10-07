@@ -8,6 +8,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -18,11 +21,21 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // H2 콘솔 테스트용 비활성화
                 .headers(headers -> headers.frameOptions(frame -> frame.disable())) // ✅ H2 콘솔 iframe 허용
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/h2-console/**").permitAll() // 콘솔 접근 허용
+                        .requestMatchers("/auth/**", "/h2-console/**",    "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**").permitAll() // 콘솔 접근 허용
                         .anyRequest().authenticated()
                 )
                 .formLogin(login -> login.disable())
-                .httpBasic(basic -> basic.disable());
+                .httpBasic(basic -> basic.disable())
+                .cors(cors -> cors.configurationSource(request -> {
+                    var corsConfig = new CorsConfiguration();
+                    corsConfig.setAllowedOrigins(List.of("*"));
+                    corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    corsConfig.setAllowedHeaders(List.of("*"));
+                    return corsConfig;
+                }));
         return http.build();
     }
 

@@ -1,11 +1,21 @@
 package com.sampoom.backend.auth.common.config.swagger;
 
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@SecurityScheme(
+        name = "bearerAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT",
+        description = "Access Token을 입력하세요. 예시: Bearer eyJhbGciOiJIUzI1NiIs..."
+)
 public class SwaggerConfig {
 
 //    @Value("${jwt.access.header}")
@@ -14,6 +24,7 @@ public class SwaggerConfig {
 //    @Value("${jwt.refresh.header}")
 //    private String refreshTokenHeader;
 
+    @Bean
     public OpenAPI openAPI() {
         Server server = new Server();
         server.setUrl("http://localhost:8080");
