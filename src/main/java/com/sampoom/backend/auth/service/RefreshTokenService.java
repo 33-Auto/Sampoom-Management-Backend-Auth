@@ -2,6 +2,7 @@ package com.sampoom.backend.auth.service;
 
 import com.sampoom.backend.auth.domain.RefreshToken;
 import com.sampoom.backend.auth.repository.RefreshTokenRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +12,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Base64;
 
+@Transactional
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {

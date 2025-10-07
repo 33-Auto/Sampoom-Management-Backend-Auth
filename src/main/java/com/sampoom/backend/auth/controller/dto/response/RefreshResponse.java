@@ -8,7 +8,6 @@ import lombok.*;
 @Builder
 public class RefreshResponse {
     private String accessToken;
-    private String tokenType;
     private int expiresIn;
     private String refreshToken;
 }

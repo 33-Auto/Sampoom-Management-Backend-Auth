@@ -4,7 +4,6 @@ import com.sampoom.backend.auth.controller.dto.request.LoginRequest;
 import com.sampoom.backend.auth.controller.dto.response.LoginResponse;
 import com.sampoom.backend.auth.controller.dto.response.RefreshResponse;
 import com.sampoom.backend.auth.jwt.JwtProvider;
-import com.sampoom.backend.auth.controller.dto.*;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,11 +24,13 @@ public class AuthService {
     private final PasswordEncoder encoder = new BCryptPasswordEncoder();
 
     private static final Map<String, String> USERS = Map.of(
-            "sample@sample.com", "$2a$10$Y5N7zJ5nJcVhC7iS9sO88O2CCCeL2AAMM0kMu7pFOFnbqvAF5VNpu"
+            "sample@sample.com", "$2a$10$sumxHE51PPEmW.Wm6NIU5O9vyoCKWu4CMGRGHkYqa0ukOTkoIZ.ie"
     );
 
     public LoginResponse login(LoginRequest req) {
         String hash = USERS.get(req.getEmail());
+        System.out.println(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("sample1234"));
+
         if (hash == null || !encoder.matches(req.getPassword(), hash))
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다.");
 
@@ -49,7 +50,6 @@ public class AuthService {
                 .role(role)
                 .accessToken(access)
                 .refreshToken(refresh)
-                .tokenType("Bearer")
                 .expiresIn(3600)
                 .build();
     }
@@ -71,7 +71,6 @@ public class AuthService {
 
         return RefreshResponse.builder()
                 .accessToken(newAccess)
-                .tokenType("Bearer")
                 .expiresIn(3600)
                 .refreshToken(newRefresh)
                 .build();

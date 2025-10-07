@@ -1,13 +1,13 @@
 package com.sampoom.backend.auth.controller;
 
 import com.sampoom.backend.auth.common.response.*;
-import com.sampoom.backend.auth.controller.dto.*;
 import com.sampoom.backend.auth.controller.dto.request.LoginRequest;
 import com.sampoom.backend.auth.controller.dto.request.RefreshRequest;
 import com.sampoom.backend.auth.controller.dto.response.LoginResponse;
 import com.sampoom.backend.auth.controller.dto.response.RefreshResponse;
+import com.sampoom.backend.auth.jwt.JwtProvider;
 import com.sampoom.backend.auth.service.AuthService;
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtProvider jwtProvider;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest req) {
@@ -53,9 +54,10 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String auth) {
         String token = auth.substring(7);
-        Long userId = Long.valueOf(Jwts.parserBuilder().build()
-                .parseClaimsJws(token).getBody().getSubject());
+        Claims claims = jwtProvider.parse(token); // JwtProvider가 내부 key로 검증
+        Long userId = Long.valueOf(claims.getSubject());
         authService.logout(userId);
         return ApiResponse.success_only(SuccessStatus.OK);
     }
+
 }

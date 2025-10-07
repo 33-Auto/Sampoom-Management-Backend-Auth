@@ -13,10 +13,16 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable()) // H2 콘솔 테스트용 비활성화
+                .headers(headers -> headers.frameOptions(frame -> frame.disable())) // ✅ H2 콘솔 iframe 허용
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/**", "/h2-console/**").permitAll() // 콘솔 접근 허용
+                        .anyRequest().authenticated()
+                )
+                .formLogin(login -> login.disable())
+                .httpBasic(basic -> basic.disable());
         return http.build();
     }
 
