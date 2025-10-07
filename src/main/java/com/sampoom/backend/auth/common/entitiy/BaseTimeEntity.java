@@ -1,4 +1,4 @@
-package com.sampoom.backend.common.entitiy;
+package com.sampoom.backend.auth.common.entitiy;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.Column;

@@ -1,12 +1,12 @@
-package com.sampoom.backend.api.health;
+package com.sampoom.backend.auth.api.health;
 
-import com.sampoom.backend.common.exception.BadRequestException;
-import com.sampoom.backend.common.exception.ForbiddenException;
-import com.sampoom.backend.common.exception.NotFoundException;
-import com.sampoom.backend.common.exception.UnauthorizedException;
-import com.sampoom.backend.common.response.ApiResponse;
-import com.sampoom.backend.common.response.ErrorStatus;
-import com.sampoom.backend.common.response.SuccessStatus;
+import com.sampoom.backend.auth.common.exception.BadRequestException;
+import com.sampoom.backend.auth.common.exception.ForbiddenException;
+import com.sampoom.backend.auth.common.exception.NotFoundException;
+import com.sampoom.backend.auth.common.exception.UnauthorizedException;
+import com.sampoom.backend.auth.common.response.ApiResponse;
+import com.sampoom.backend.auth.common.response.ErrorStatus;
+import com.sampoom.backend.auth.common.response.SuccessStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;

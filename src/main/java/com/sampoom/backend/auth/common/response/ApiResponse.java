@@ -1,4 +1,4 @@
-package com.sampoom.backend.common.response;
+package com.sampoom.backend.auth.common.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
