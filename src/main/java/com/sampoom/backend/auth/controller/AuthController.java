@@ -16,7 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@SecurityRequirement(name = "AccessToken") // 기본적으로 AccessToken 필요
+@SecurityRequirement(name = "bearerAuth") // 기본적으로 AccessToken 필요
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -47,7 +47,6 @@ public class AuthController {
     @SecurityRequirement(name = "RefreshToken") // refresh는 RefreshToken 스키마 적용
     public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@RequestBody RefreshRequest req) {
         try {
-            // 실제 User 서버 구현 후 활성화
 //            // RefreshToken에서 userId 추출
 //            Claims claims = jwtProvider.parse(req.getRefreshToken());
 //            Long userId = Long.valueOf(claims.getSubject());
