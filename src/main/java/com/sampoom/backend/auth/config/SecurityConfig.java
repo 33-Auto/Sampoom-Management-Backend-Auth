@@ -21,7 +21,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // H2 콘솔 테스트용 비활성화
                 .headers(headers -> headers.frameOptions(frame -> frame.disable())) // ✅ H2 콘솔 iframe 허용
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/h2-console/**",    "/swagger-ui/**",
+                        .requestMatchers(
+                                "/auth/**",
+                                "/user/signup",
+                                "/h2-console/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**").permitAll() // 콘솔 접근 허용
@@ -40,7 +45,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    PasswordEncoder passwordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }
