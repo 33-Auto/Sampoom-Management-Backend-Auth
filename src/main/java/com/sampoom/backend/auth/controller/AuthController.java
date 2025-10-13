@@ -27,7 +27,6 @@ public class AuthController {
     private final JwtProvider jwtProvider;
 
     @PostMapping("/login")
-    @SecurityRequirement(name = "none") // 로그인은 인증 불필요
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest req) {
         try {
             LoginResponse resp = authService.login(req);
@@ -37,7 +36,7 @@ public class AuthController {
             ApiResponse<LoginResponse> response = ApiResponse.<LoginResponse>builder()
                     .status(ErrorStatus.UNAUTHORIZED.getStatusCode())
                     .success(false)
-                    .message(ErrorStatus.UNAUTHORIZED.getMessage())
+                    .message(e.getMessage())
                     .build();
             return ResponseEntity.status(ErrorStatus.UNAUTHORIZED.getStatusCode()).body(response);
         }
@@ -59,7 +58,7 @@ public class AuthController {
             ApiResponse<RefreshResponse> response = ApiResponse.<RefreshResponse>builder()
                     .status(ErrorStatus.UNAUTHORIZED.getStatusCode())
                     .success(false)
-                    .message(ErrorStatus.UNAUTHORIZED.getMessage())
+                    .message(e.getMessage())
                     .build();
             return ResponseEntity.status(ErrorStatus.UNAUTHORIZED.getStatusCode()).body(response);
         }

@@ -1,25 +1,24 @@
 package com.sampoom.backend.auth.service;
 
 import com.sampoom.backend.auth.controller.dto.request.LoginRequest;
+import com.sampoom.backend.auth.external.dto.VerifyLoginRequest;
 import com.sampoom.backend.auth.controller.dto.response.LoginResponse;
 import com.sampoom.backend.auth.controller.dto.response.RefreshResponse;
+import com.sampoom.backend.auth.external.dto.UserResponse;
 import com.sampoom.backend.auth.jwt.JwtProvider;
-import com.sampoom.backend.auth.user.domain.User;
-import com.sampoom.backend.auth.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Transactional
 @Service
 @RequiredArgsConstructor
@@ -32,25 +31,30 @@ public class AuthService {
 
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshService;
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-//    private static final Map<String, String> USERS = Map.of(
-//            "sample@sample.com", "$2a$10$sumxHE51PPEmW.Wm6NIU5O9vyoCKWu4CMGRGHkYqa0ukOTkoIZ.ie"
-//    );
-    private final UserRepository userRepository;
+    private final UserClient userClient;
 
     public LoginResponse login(LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."));
-
-        if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+        // User 서버에 로그인 검증 요청 (이메일 + 비밀번호 전달)
+        System.out.println("🔥 [DEBUG] 로그인 시도: " + req.getEmail());
+        Boolean valid = userClient.verifyLogin(new VerifyLoginRequest(req.getEmail(), req.getPassword()));
+        System.out.println("✅ [DEBUG] verifyLogin 결과: " + valid);
+        if (!valid) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다.");
+        }
+
+        // 유저 정보 조회
+        log.info("✅ verifyLogin 성공");
+        UserResponse user = userClient.getUserByEmail(req.getEmail());
+        log.info("✅ getUserByEmail 결과: " + user);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다.");
         }
 
         String access = jwtProvider.createAccessToken(user.getId(), user.getRole(), user.getName());
         String jti = UUID.randomUUID().toString();
         String refresh = jwtProvider.createRefreshToken(user.getId(), jti);
 
+        // 리프레스 토큰 저장
         refreshService.save(user.getId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
 
         return LoginResponse.builder()
@@ -73,8 +77,10 @@ public class AuthService {
 
         refreshService.revoke(userId, jti);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+        UserResponse user = userClient.getUserById(userId);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
+        }
 
         String newJti = UUID.randomUUID().toString();
         String newAccess = jwtProvider.createAccessToken(userId, user.getRole(), user.getName());
