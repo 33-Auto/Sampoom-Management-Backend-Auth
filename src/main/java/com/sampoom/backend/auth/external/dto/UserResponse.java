@@ -18,6 +18,6 @@ public class UserResponse {
     private String email;     // 이메일 (아이디)
     private String name;      // 사용자 이름
     private String role;      // 권한 (e.g. ROLE_USER, ROLE_ADMIN)
-    private String password;  // 암호화된 비밀번호 (auth 쪽에서 matches() 수행용)
+    private String password;  // 비밀번호
 }
 

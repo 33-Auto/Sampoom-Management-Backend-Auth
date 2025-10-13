@@ -43,11 +43,13 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String createRefreshToken(Long userId, String jti) {
+    public String createRefreshToken(Long userId, String role, String name, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)
                 .setSubject(String.valueOf(userId))
+                .claim("role", role)
+                .claim("name", name)
                 .setId(jti)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(refreshTtlSec)))

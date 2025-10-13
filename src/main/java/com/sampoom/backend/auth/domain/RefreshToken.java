@@ -11,10 +11,8 @@ import java.time.Instant;
 public class RefreshToken {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private Long userId;
     private String tokenId;     // JWT jti
     private String tokenHash;   // SHA256 해시
     private Instant expiresAt;
-    private boolean revoked;
 }

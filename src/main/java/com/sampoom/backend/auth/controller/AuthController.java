@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenService refreshService;
     private final JwtProvider jwtProvider;
 
     @PostMapping("/login")
@@ -42,47 +42,39 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/refresh")
-    @SecurityRequirement(name = "RefreshToken") // refresh는 RefreshToken 스키마 적용
-    public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@RequestBody RefreshRequest req) {
-        try {
-//            // RefreshToken에서 userId 추출
-//            Claims claims = jwtProvider.parse(req.getRefreshToken());
-//            Long userId = Long.valueOf(claims.getSubject());
-//            // 기존 RefreshToken 전부 삭제 (단일 세션 유지용)
-//            refreshTokenService.deleteAllByUser(userId);
-            // 토큰들 재발급
-            RefreshResponse resp = authService.refresh(req.getRefreshToken());
-            return ApiResponse.success(SuccessStatus.OK, resp);
-        } catch (Exception e) {
-            ApiResponse<RefreshResponse> response = ApiResponse.<RefreshResponse>builder()
-                    .status(ErrorStatus.UNAUTHORIZED.getStatusCode())
-                    .success(false)
-                    .message(e.getMessage())
-                    .build();
-            return ResponseEntity.status(ErrorStatus.UNAUTHORIZED.getStatusCode()).body(response);
-        }
+@PostMapping("/refresh")
+public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@RequestBody RefreshRequest req) {
+    try {
+        // 그냥 토큰만 받아서 서비스로 넘긴다 (검증 X)
+        RefreshResponse resp = authService.refresh(req.getRefreshToken());
+        return ApiResponse.success(SuccessStatus.OK, resp);
+    } catch (Exception e) {
+        ApiResponse<RefreshResponse> response = ApiResponse.<RefreshResponse>builder()
+                .status(ErrorStatus.UNAUTHORIZED.getStatusCode())
+                .success(false)
+                .message(e.getMessage())
+                .build();
+        return ResponseEntity.status(ErrorStatus.UNAUTHORIZED.getStatusCode()).body(response);
     }
+}
+
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
         try {
             String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(ErrorStatus.UNAUTHORIZED.getStatusCode())
-                        .body(ApiResponse.fail(ErrorStatus.UNAUTHORIZED.getStatusCode(), "토큰이 제공되지 않았습니다."));
+                return ResponseEntity.status(401)
+                        .body(ApiResponse.fail(401, "토큰이 제공되지 않았습니다."));
             }
-
-            String token = authHeader.substring(7);
+            String token = authHeader.substring(7); // Bearer(공백)
             Claims claims = jwtProvider.parse(token);
             Long userId = Long.valueOf(claims.getSubject());
-
             authService.logout(userId);
             return ApiResponse.success_only(SuccessStatus.OK);
         } catch (Exception e) {
-            return ResponseEntity.status(ErrorStatus.UNAUTHORIZED.getStatusCode())
-                    .body(ApiResponse.fail(ErrorStatus.UNAUTHORIZED.getStatusCode(), "유효하지 않은 토큰입니다."));
+            return ResponseEntity.status(403)
+                    .body(ApiResponse.fail(403, "권한이 없습니다."));
         }
     }
-
 }
