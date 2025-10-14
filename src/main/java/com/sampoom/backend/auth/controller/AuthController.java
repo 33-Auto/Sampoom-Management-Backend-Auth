@@ -9,11 +9,13 @@ import com.sampoom.backend.auth.jwt.JwtProvider;
 import com.sampoom.backend.auth.service.AuthService;
 import com.sampoom.backend.auth.service.RefreshTokenService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @SecurityRequirement(name = "bearerAuth") // 기본적으로 AccessToken 필요
@@ -22,10 +24,9 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final RefreshTokenService refreshService;
-    private final JwtProvider jwtProvider;
 
     @PostMapping("/login")
+    @SecurityRequirement(name = "none")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest req) {
         try {
             LoginResponse resp = authService.login(req);
@@ -42,18 +43,26 @@ public class AuthController {
     }
 
 @PostMapping("/refresh")
-public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@RequestBody RefreshRequest req) {
+@SecurityRequirement(name = "none")
+public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody RefreshRequest req) {
     try {
-        // 그냥 토큰만 받아서 서비스로 넘긴다 (검증 X)
         RefreshResponse resp = authService.refresh(req.getRefreshToken());
         return ApiResponse.success(SuccessStatus.OK, resp);
-    } catch (Exception e) {
+    } catch (ResponseStatusException e) {
+        // AuthService에서 발생한 인증 관련 예외
         ApiResponse<RefreshResponse> response = ApiResponse.<RefreshResponse>builder()
-                .status(ErrorStatus.UNAUTHORIZED.getStatusCode())
+                .status(e.getStatusCode().value())
                 .success(false)
-                .message(e.getMessage())
+                .message(e.getReason())
                 .build();
-        return ResponseEntity.status(ErrorStatus.UNAUTHORIZED.getStatusCode()).body(response);
+        return ResponseEntity.status(e.getStatusCode()).body(response);
+    } catch (Exception e) {
+        log.error("토큰 재발급 중 예외 발생", e);
+        ApiResponse<RefreshResponse> response = ApiResponse.<RefreshResponse>builder()
+            .status(500)
+            .success(false).message("서버 오류가 발생했습니다")
+            .build();
+        return ResponseEntity.status(500).body(response);
     }
 }
 
