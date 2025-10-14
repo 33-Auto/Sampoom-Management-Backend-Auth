@@ -33,7 +33,7 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**").permitAll() // 콘솔 접근 허용
-                        .anyRequest().authenticated()
+                        .anyRequest().authenticated()//
                 )
                 // 기본 폼 로그인 비활성화
                 .formLogin(login -> login.disable())
