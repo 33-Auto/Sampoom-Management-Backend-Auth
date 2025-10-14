@@ -8,12 +8,9 @@ import com.sampoom.backend.auth.controller.dto.response.RefreshResponse;
 import com.sampoom.backend.auth.jwt.JwtProvider;
 import com.sampoom.backend.auth.service.AuthService;
 import com.sampoom.backend.auth.service.RefreshTokenService;
-import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @SecurityRequirement(name = "bearerAuth") // 기본적으로 AccessToken 필요
 @RestController
-@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
