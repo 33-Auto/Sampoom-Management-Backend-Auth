@@ -1,5 +1,6 @@
 package com.sampoom.backend.auth.service;
 
+import com.sampoom.backend.auth.common.response.ApiResponse;
 import com.sampoom.backend.auth.controller.dto.request.LoginRequest;
 import com.sampoom.backend.auth.external.client.UserClient;
 import com.sampoom.backend.auth.controller.dto.response.LoginResponse;
@@ -41,7 +42,7 @@ public class AuthService {
     @Transactional
     public LoginResponse login(LoginRequest req) {
         // 바로 받아오면 예외 처리 하기 전에 에러
-        UserResponse user;
+        ApiResponse<UserResponse> user;
 
         // 유저 조회 및 예외 처리
         try {
@@ -55,22 +56,22 @@ public class AuthService {
         }
 
         // 비밀번호 검증
-        if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(req.getPassword(), user.getData().getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "비밀번호가 올바르지 않습니다.");
         }
 
         // 토큰 발급
-        String access = jwtProvider.createAccessToken(user.getId(), user.getRole(), user.getUserName());
+        String access = jwtProvider.createAccessToken(user.getData().getId(), user.getData().getRole(), user.getData().getUserName());
         String jti = UUID.randomUUID().toString();
-        String refresh = jwtProvider.createRefreshToken(user.getId(), user.getRole(), user.getUserName(), jti);
+        String refresh = jwtProvider.createRefreshToken(user.getData().getId(), user.getData().getRole(), user.getData().getUserName(), jti);
 
         // 리프레시 토큰 저장
-        refreshService.save(user.getId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
+        refreshService.save(user.getData().getId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
 
         return LoginResponse.builder()
-                .userId(user.getId())
-                .userName(user.getUserName())
-                .role(user.getRole())
+                .userId(user.getData().getId())
+                .userName(user.getData().getUserName())
+                .role(user.getData().getRole())
                 .accessToken(access)
                 .refreshToken(refresh)
                 .expiresIn(accessTokenExpiration)

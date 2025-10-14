@@ -1,5 +1,6 @@
 package com.sampoom.backend.auth.external.fallback;
 
+import com.sampoom.backend.auth.common.response.ApiResponse;
 import com.sampoom.backend.auth.external.dto.UserResponse;
 import com.sampoom.backend.auth.external.client.UserClient;
 import org.springframework.stereotype.Component;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Component;
 public class UserClientFallback implements UserClient {
 
     @Override
-    public UserResponse getUserByEmail(String email) {
+    public ApiResponse<UserResponse> getUserByEmail(String email) {
         // fallback에서는 보통 null을 반환하고 서비스 단에서 예외 처리
         return null;
     }

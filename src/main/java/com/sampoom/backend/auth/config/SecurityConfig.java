@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -21,11 +22,12 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         // CodeQL [java/spring-disabled-csrf-protection]: suppress - Stateless JWT API so CSRF is unnecessary
         http
+                .logout(logout -> logout.disable())
                 .csrf(csrf -> csrf.disable())   // JWT 는 CSRF 보호가 필요없음
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/login",
-                                "/auth/refresh",
+                                "/login",
+                                "/refresh",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
@@ -41,9 +43,12 @@ public class SecurityConfig {
                 // CORS 허용 설정
                 .cors(cors -> cors.configurationSource(request -> {
                     var corsConfig = new CorsConfiguration();
-                    corsConfig.setAllowedOrigins(List.of("*"));
                     corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                     corsConfig.setAllowedHeaders(List.of("*"));
+                    corsConfig.setAllowedOrigins(List.of("*"));
+//                    배포용 CORS 설정
+//                    corsConfig.setAllowedOrigins(List.of("https://sampoom.store"));
+//                    corsConfig.setAllowCredentials(true); // 이거 중요
                     return corsConfig;
                 }))
                 .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
@@ -55,9 +60,12 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-    // 사용자 정보 조회 (인증용)
+
+    // Spring Security 자동 보안 설정 해제
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> null;
+        return username -> {
+            throw new UsernameNotFoundException("UserDetailsService는 사용하지 않습니다.");
+        };
     }
 }

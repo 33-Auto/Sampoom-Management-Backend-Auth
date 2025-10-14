@@ -33,6 +33,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Claims claims = jwtProvider.parse(token);
 
                 String role = claims.get("role", String.class);
+
                 if (role == null || role.isBlank()) {
                         SecurityContextHolder.clearContext();
                         filterChain.doFilter(request, response);
@@ -53,5 +54,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+        System.out.println("📡 들어온 HTTP 메서드: " + request.getMethod());
+        System.out.println("📡 들어온 URI: " + request.getRequestURI());
+        System.out.println("📦 Authorization 헤더: " + request.getHeader("Authorization"));
     }
 }

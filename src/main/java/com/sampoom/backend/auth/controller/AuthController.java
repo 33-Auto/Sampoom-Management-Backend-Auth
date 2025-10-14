@@ -69,6 +69,11 @@ public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody 
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication) {
+        System.out.println("🔥 인증 객체: " + authentication);
+        if (authentication != null) {
+            System.out.println("🔥 Principal: " + authentication.getPrincipal());
+            System.out.println("🔥 Authorities: " + authentication.getAuthorities());
+        }
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(401)

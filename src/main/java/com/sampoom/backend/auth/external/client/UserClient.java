@@ -1,5 +1,6 @@
 package com.sampoom.backend.auth.external.client;
 
+import com.sampoom.backend.auth.common.response.ApiResponse;
 import com.sampoom.backend.auth.external.dto.UserResponse;
 import com.sampoom.backend.auth.external.fallback.UserClientFallback;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -12,6 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable;
         fallback = UserClientFallback.class // User 서비스 장애 대비용
 )
 public interface UserClient {
-    @GetMapping("/user/email/{email}")
-    UserResponse getUserByEmail(@PathVariable("email") String email);
+    @GetMapping("/email/{email:.+}")
+    ApiResponse<UserResponse> getUserByEmail(@PathVariable("email") String email);
 }
