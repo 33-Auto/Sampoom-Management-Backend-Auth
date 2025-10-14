@@ -8,7 +8,7 @@ import lombok.*;
 @Builder
 public class LoginResponse {
     private Long userId;
-    private String username;
+    private String userName;
     private String role;
     private String accessToken;
     private String refreshToken;

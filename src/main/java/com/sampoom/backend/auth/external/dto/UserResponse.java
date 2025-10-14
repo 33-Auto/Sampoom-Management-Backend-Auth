@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 public class UserResponse {
     private Long id;          // 사용자 ID
     private String email;     // 이메일 (아이디)
-    private String name;      // 사용자 이름
+    private String userName;      // 사용자 이름
     private String role;      // 권한 (e.g. ROLE_USER, ROLE_ADMIN)
     private String password;  // 비밀번호
 }

@@ -60,16 +60,16 @@ public class AuthService {
         }
 
         // 토큰 발급
-        String access = jwtProvider.createAccessToken(user.getId(), user.getRole(), user.getName());
+        String access = jwtProvider.createAccessToken(user.getId(), user.getRole(), user.getUserName());
         String jti = UUID.randomUUID().toString();
-        String refresh = jwtProvider.createRefreshToken(user.getId(), user.getRole(), user.getName(), jti);
+        String refresh = jwtProvider.createRefreshToken(user.getId(), user.getRole(), user.getUserName(), jti);
 
         // 리프레시 토큰 저장
         refreshService.save(user.getId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
 
         return LoginResponse.builder()
                 .userId(user.getId())
-                .username(user.getName())
+                .userName(user.getUserName())
                 .role(user.getRole())
                 .accessToken(access)
                 .refreshToken(refresh)
