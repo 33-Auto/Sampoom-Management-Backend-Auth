@@ -86,6 +86,8 @@ public class AuthService {
             claims = jwtProvider.parse(refreshToken); // 만료 시 ExpiredJwtException 자동 발생
         } catch (ExpiredJwtException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다.");
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰");
         }
         Long userId = Long.valueOf(claims.getSubject());
         String jti = claims.getId();

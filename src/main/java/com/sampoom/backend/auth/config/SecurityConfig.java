@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,9 +19,9 @@ import java.util.List;
 public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable()) // H2 콘솔 테스트용 비활성화
-                .headers(headers -> headers.frameOptions(frame -> frame.disable())) // ✅ H2 콘솔 iframe 허용
+        // CodeQL [java/spring-disabled-csrf-protection]: This is a stateless JWT API, CSRF protection is unnecessary.
+        http    // JWT 는 CSRF 보호가 필요없음
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/auth/login",
@@ -33,12 +34,16 @@ public class SecurityConfig {
                                 "/webjars/**").permitAll() // 콘솔 접근 허용
                         .anyRequest().authenticated()
                 )
+                // 기본 폼 로그인 비활성화
                 .formLogin(login -> login.disable())
                 .httpBasic(basic -> basic.disable())
+                // 세션 미사용 명시
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // CORS 허용 설정
                 .cors(cors -> cors.configurationSource(request -> {
                     var corsConfig = new CorsConfiguration();
                     corsConfig.setAllowedOrigins(List.of("*"));
-                    corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                     corsConfig.setAllowedHeaders(List.of("*"));
                     return corsConfig;
                 }))
@@ -46,10 +51,12 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // 비밀번호 암호화
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+    // 사용자 정보 조회 (인증용)
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> null;

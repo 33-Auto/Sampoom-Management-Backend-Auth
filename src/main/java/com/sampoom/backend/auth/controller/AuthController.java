@@ -12,10 +12,13 @@ import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @SecurityRequirement(name = "bearerAuth") // 기본적으로 AccessToken 필요
 @RestController
 @RequestMapping("/auth")
@@ -60,21 +63,19 @@ public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@RequestBody Refresh
 
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication) {
         try {
-            String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(401)
-                        .body(ApiResponse.fail(401, "토큰이 제공되지 않았습니다."));
+                        .body(ApiResponse.fail(401, "인증되지 않은 요청입니다."));
             }
-            String token = authHeader.substring(7); // Bearer(공백)
-            Claims claims = jwtProvider.parse(token);
-            Long userId = Long.valueOf(claims.getSubject());
+            Long userId = Long.valueOf(authentication.getName());
             authService.logout(userId);
             return ApiResponse.success_only(SuccessStatus.OK);
         } catch (Exception e) {
-            return ResponseEntity.status(403)
-                    .body(ApiResponse.fail(403, "권한이 없습니다."));
+            log.error("로그아웃 처리 중 오류 발생", e);
+            return ResponseEntity.status(401)
+                        .body(ApiResponse.fail(401, "로그아웃 처리에 실패했습니다."));
         }
     }
 }

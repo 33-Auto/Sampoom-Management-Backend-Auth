@@ -33,9 +33,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Claims claims = jwtProvider.parse(token);
 
                 String role = claims.get("role", String.class);
-
+                if (role == null || role.isBlank()) {
+                        SecurityContextHolder.clearContext();
+                        filterChain.doFilter(request, response);
+                        return;
+                }
+                // Spring Security는 ROLE_ 접두사를 기대함
+                // 접수사가 없으면 붙여주고, 있으면 그대로 둔다.
+                String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        claims.getSubject(), null, List.of(() -> role)
+                        claims.getSubject(), null, List.of(() -> authority)
                 );
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);

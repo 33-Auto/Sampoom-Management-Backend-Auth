@@ -11,12 +11,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
-//    @Value("${jwt.access.header}")
-//    private String accessTokenHeader;
-//
-//    @Value("${jwt.refresh.header}")
-//    private String refreshTokenHeader;
-
     @Bean
     public OpenAPI openAPI() {
         SecurityScheme bearerAuth = new SecurityScheme()
