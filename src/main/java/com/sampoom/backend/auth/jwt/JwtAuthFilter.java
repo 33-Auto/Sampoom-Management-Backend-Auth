@@ -1,6 +1,9 @@
 package com.sampoom.backend.auth.jwt;
 
+import com.sampoom.backend.auth.common.exception.UnauthorizedException;
+import com.sampoom.backend.auth.common.response.ErrorStatus;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,16 +34,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             try {
                 String token = authHeader.substring(7);
                 Claims claims = jwtProvider.parse(token);
+                // 토큰 타입 검증
+                String type = claims.get("type", String.class);
+                if ("refresh".equals(type)) {
+                    throw new UnauthorizedException(ErrorStatus.TOKEN_TYPE_INVALID);
+                }
 
+                // role 검증
                 String role = claims.get("role", String.class);
-
                 if (role == null || role.isBlank()) {
                         SecurityContextHolder.clearContext();
                         filterChain.doFilter(request, response);
                         return;
                 }
                 // Spring Security는 ROLE_ 접두사를 기대함
-                // 접수사가 없으면 붙여주고, 있으면 그대로 둔다.
+                // 접두사가 없으면 붙여주고, 있으면 그대로 둔다.
                 String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         claims.getSubject(), null, List.of(() -> authority)
@@ -50,6 +58,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             } catch (Exception e) {
                 // 토큰 검증 실패 시 SecurityContext 비움
                 SecurityContextHolder.clearContext();
+                throw e;
             }
         }
 

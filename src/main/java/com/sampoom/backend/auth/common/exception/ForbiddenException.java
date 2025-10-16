@@ -12,7 +12,7 @@ public class ForbiddenException extends BaseException {
     super(HttpStatus.FORBIDDEN, message);
   }
 
-    public ForbiddenException(ErrorStatus errorStatus) {
-        super(errorStatus.getHttpStatus(), errorStatus.getMessage(), errorStatus.getCode());
-    }
+  public ForbiddenException(ErrorStatus errorStatus) {
+      super(errorStatus.getHttpStatus(), errorStatus.getMessage(), errorStatus.getCode());
+  }
 }

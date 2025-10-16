@@ -38,8 +38,6 @@ public class RefreshTokenService {
                 .orElse(false);
     }
 
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deleteAllByUser(Long userId) {
         refreshTokenRepository.deleteByUserId(userId);
     }

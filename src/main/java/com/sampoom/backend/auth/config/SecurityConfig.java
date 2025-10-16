@@ -1,6 +1,7 @@
 package com.sampoom.backend.auth.config;
 
 import com.sampoom.backend.auth.jwt.JwtAuthFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -51,7 +52,21 @@ public class SecurityConfig {
                     corsConfig.setAllowCredentials(true);
                     return corsConfig;
                 }))
-                .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        // 인증 실패(UnauthorizedException 포함) 시 401 반환
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("""
+                    {
+                        "success": false,
+                        "code": 10406,
+                        "message": "유효하지 않은 토큰 타입입니다."
+                    }
+                    """);
+                        })
+                );
         return http.build();
     }
 

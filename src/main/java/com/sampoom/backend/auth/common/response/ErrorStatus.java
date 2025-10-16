@@ -15,6 +15,7 @@ public enum ErrorStatus {
     USER_PASSWORD_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 비밀번호입니다.",10402),
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED,"유효하지 않은 토큰입니다.",10404),
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED,"만료된 토큰입니다.",10405),
+    TOKEN_TYPE_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰 타입입니다.",10406),
     // 403 FORBIDDEN
 
     // 404 NOT_FOUND

@@ -56,6 +56,7 @@ public class ApiResponse<T> {
     // 새로운 에러 응답 형식을 위한 메서드 추가
     public static ApiResponse<Void> errorWithCode(int code, String message) {
         return ApiResponse.<Void>builder()
+                .success(false)
                 .code(code)
                 .message(message)
                 .build();

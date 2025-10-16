@@ -1,6 +1,5 @@
 package com.sampoom.backend.auth.service;
 
-import com.sampoom.backend.auth.common.exception.BaseException;
 import com.sampoom.backend.auth.common.exception.InternalServerErrorException;
 import com.sampoom.backend.auth.common.exception.NotFoundException;
 import com.sampoom.backend.auth.common.exception.UnauthorizedException;
@@ -19,11 +18,9 @@ import io.jsonwebtoken.ExpiredJwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -56,12 +53,17 @@ public class AuthService {
         } catch (FeignException.NotFound e) {
             // 이메일 존재 X
             throw new NotFoundException(ErrorStatus.USER_BY_EMAIL_NOT_FOUND);
-        } catch (FeignException e) {
+        } catch (FeignException.Unauthorized e){
+            // 비밀번호 불일치
+            throw new UnauthorizedException(ErrorStatus.USER_PASSWORD_INVALID);
+        } catch (FeignException.InternalServerError e) {
             // User 서비스 자체 문제 (다운 등)
             throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
         }
-
         UserResponse userResponse = user.getData();
+
+        // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
+        refreshService.deleteAllByUser(userResponse.getUserId());
 
         // 토큰 발급
         String access = jwtProvider.createAccessToken(userResponse.getUserId(), userResponse.getRole(), userResponse.getUserName());
@@ -93,6 +95,13 @@ public class AuthService {
         } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
+
+        // 토큰 타입 검증
+         String type = claims.get("type", String.class);
+         if (!"refresh".equals(type)) {
+             throw new UnauthorizedException(ErrorStatus.TOKEN_TYPE_INVALID);
+         }
+
         Long userId = Long.valueOf(claims.getSubject());
         String jti = claims.getId();
 

@@ -21,9 +21,6 @@ public class SwaggerConfig {
                 .scheme("bearer")
                 .bearerFormat("JWT")
                 .name("Authorization");
-
-        Server server = new Server();
-        server.setUrl("http://localhost:8081");
         Server localServer = new Server()
                 .url("http://localhost:8081/api/auth")
                 .description("로컬 서버");

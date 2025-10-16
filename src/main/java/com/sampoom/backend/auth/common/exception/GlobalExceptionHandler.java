@@ -33,6 +33,4 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.errorWithCode(10400, errorMessage));
     }
-
-
 }

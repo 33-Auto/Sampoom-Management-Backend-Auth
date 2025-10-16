@@ -12,7 +12,7 @@ public class NotFoundException extends BaseException {
     super(HttpStatus.NOT_FOUND, message);
   }
 
-    public NotFoundException(ErrorStatus errorStatus) {
-        super(errorStatus.getHttpStatus(), errorStatus.getMessage(), errorStatus.getCode());
-    }
+  public NotFoundException(ErrorStatus errorStatus) {
+      super(errorStatus.getHttpStatus(), errorStatus.getMessage(), errorStatus.getCode());
+  }
 }

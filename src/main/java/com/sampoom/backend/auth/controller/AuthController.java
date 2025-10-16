@@ -27,7 +27,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @SecurityRequirement(name = "none")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest req) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest req) {
         LoginResponse resp = authService.login(req);
         return ApiResponse.success(SuccessStatus.OK, resp);
     }
