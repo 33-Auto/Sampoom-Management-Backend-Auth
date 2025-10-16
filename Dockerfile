@@ -1,5 +1,5 @@
 # Dockerfile
-FROM eclipse-temurin:17-jre
+FROM --platform=linux/arm64 gradle:7.6.1-jdk17
 
 WORKDIR /app
 
