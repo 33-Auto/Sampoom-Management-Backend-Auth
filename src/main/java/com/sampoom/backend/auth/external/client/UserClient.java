@@ -10,12 +10,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+
 @FeignClient(
         name = "user-service",
-        url = "${user.service.url}", // application.yml에서 주입받음
-        fallback = UserClientFallback.class // User 서비스 장애 대비용
+        url = "${user.service.url}",  // ✅ 도메인만 주입받음
+        fallback = UserClientFallback.class
 )
 public interface UserClient {
-    @PostMapping("/verify")
+    @PostMapping("/api/user/verify") // ✅ 여기서 API 경로까지 완성
     ApiResponse<UserResponse> verifyLogin(@RequestBody VerifyLoginRequest verifyLoginRequest);
 }
