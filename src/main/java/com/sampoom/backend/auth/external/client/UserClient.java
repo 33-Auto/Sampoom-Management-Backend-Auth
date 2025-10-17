@@ -12,10 +12,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(
         name = "user-service",
-        url = "${user.service.url}", // application.yml에서 주입받음
-        fallback = UserClientFallback.class // User 서비스 장애 대비용
+        url = "${user.service.url}",
+        fallback = UserClientFallback.class
 )
 public interface UserClient {
-    @PostMapping("/verify")
+
+    @PostMapping("/api/user/verify")
     ApiResponse<UserResponse> verifyLogin(@RequestBody VerifyLoginRequest verifyLoginRequest);
 }
