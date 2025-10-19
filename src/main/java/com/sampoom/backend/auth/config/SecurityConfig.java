@@ -46,8 +46,6 @@ public class SecurityConfig {
                     var corsConfig = new CorsConfiguration();
                     corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                     corsConfig.setAllowedHeaders(List.of("*"));
-//                    corsConfig.setAllowedOrigins(List.of("*"));
-//                    배포용 CORS 설정
                     corsConfig.setAllowedOrigins(List.of("https://sampoom.store"));
                     corsConfig.setAllowCredentials(true);
                     return corsConfig;
