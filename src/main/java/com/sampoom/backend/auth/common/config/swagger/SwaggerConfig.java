@@ -22,7 +22,7 @@ public class SwaggerConfig {
                 .bearerFormat("JWT")
                 .name("Authorization");
         Server localServer = new Server()
-                .url("http://localhost:8081/api/auth")
+                .url("http://localhost:8080/api/auth")
                 .description("로컬 서버");
 
         Server prodServer = new Server()
