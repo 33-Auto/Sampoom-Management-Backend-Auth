@@ -6,6 +6,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -63,5 +64,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    // 쿠키에서 엑세스 토큰 인증
+    private String resolveAccessToken(HttpServletRequest request) {
+        // 쿠키에서 ACCESS_TOKEN 검색
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("ACCESS_TOKEN".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        // Swagger나 테스트용으로 헤더도 허용
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        return null;
     }
 }

@@ -9,9 +9,14 @@ import com.sampoom.backend.auth.jwt.JwtProvider;
 import com.sampoom.backend.auth.service.AuthService;
 import com.sampoom.backend.auth.service.RefreshTokenService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -27,23 +32,98 @@ public class AuthController {
 
     @PostMapping("/login")
     @SecurityRequirement(name = "none")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest req) {
+    public ResponseEntity<ApiResponse<Void>> login(@Valid @RequestBody LoginRequest req, HttpServletResponse response) {
         LoginResponse resp = authService.login(req);
-        return ApiResponse.success(SuccessStatus.OK, resp);
+
+        ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", resp.getAccessToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Strict")
+                .maxAge(resp.getExpiresIn())
+                .build();
+
+        ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", resp.getRefreshToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Strict")
+                .maxAge(1209600) // 2주
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        return ApiResponse.success_only(SuccessStatus.OK);
     }
 
     @PostMapping("/refresh")
     @SecurityRequirement(name = "none")
-    public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody RefreshRequest req) {
-        RefreshResponse resp = authService.refresh(req.getRefreshToken());
-        return ApiResponse.success(SuccessStatus.OK, resp);
+    public ResponseEntity<ApiResponse<Void>> refresh(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        String refreshToken = null;
+
+        // 쿠키에서 Refresh Token 읽기
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("REFRESH_TOKEN".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        RefreshResponse resp = authService.refresh(refreshToken);
+
+        // 새 AccessToken 쿠키
+        ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", resp.getAccessToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Strict")
+                .maxAge(resp.getExpiresIn())
+                .build();
+
+        // 새 RefreshToken 쿠키
+        ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", resp.getRefreshToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Strict")
+                .maxAge(1209600)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        return ApiResponse.success_only(SuccessStatus.OK);
     }
 
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication) {
+    public ResponseEntity<ApiResponse<Void>> logout(
+            Authentication authentication,
+            HttpServletResponse response
+    ) {
         Long userId = Long.valueOf(authentication.getName());
         authService.logout(userId);
+
+        // 쿠키 삭제 (Max-Age=0)
+        ResponseCookie deleteAccess = ResponseCookie.from("ACCESS_TOKEN", "")
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        ResponseCookie deleteRefresh = ResponseCookie.from("REFRESH_TOKEN", "")
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteAccess.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteRefresh.toString());
+
         return ApiResponse.success_only(SuccessStatus.OK);
     }
 }
