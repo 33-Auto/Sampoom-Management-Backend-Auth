@@ -35,9 +35,10 @@ jobs:
           fi
           
       - name: Create application.properties from secret
+      - name: Create application.properties from secret
         run: |
           mkdir -p src/main/resources
-          printf "%s" "${{ secrets.APP_PROPS_USER }}" > src/main/resources/application.yml
+          printf "%s" "${{ secrets.APP_PROPS_AUTH }}" > src/main/resources/application.yml
 
       - name: Build auth jar
         run: ./gradlew clean bootJar -x test -Dspring.profiles.active=ci
