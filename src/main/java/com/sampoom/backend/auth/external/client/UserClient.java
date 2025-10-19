@@ -17,6 +17,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 )
 public interface UserClient {
 
-    @PostMapping("/api/user/verify")
+    @PostMapping("/verify")
     ApiResponse<UserResponse> verifyLogin(@RequestBody VerifyLoginRequest verifyLoginRequest);
 }
