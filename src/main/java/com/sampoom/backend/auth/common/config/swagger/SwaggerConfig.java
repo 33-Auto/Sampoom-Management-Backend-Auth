@@ -35,8 +35,9 @@ public class SwaggerConfig {
                 .url("https://sampoom.store/api/auth")
                 .description("배포 서버");
 
-        SecurityRequirement securityRequirement = new SecurityRequirement()
-                .addList("cookieAuth")
+        SecurityRequirement cookieAuthRequirement = new SecurityRequirement()
+                .addList("cookieAuth");
+        SecurityRequirement bearerAuthRequirement = new SecurityRequirement()
                 .addList("bearerAuth");
 
         return new OpenAPI()
@@ -48,7 +49,8 @@ public class SwaggerConfig {
                         .addSecuritySchemes("bearerAuth", bearerAuth)
                         .addSecuritySchemes("cookieAuth", bearerAuth)
                 )
-                .addSecurityItem(securityRequirement)
+                .addSecurityItem(cookieAuthRequirement)
+                .addSecurityItem(bearerAuthRequirement)
                 .servers(List.of(localServer, prodServer));
     }
 }

@@ -3,13 +3,13 @@ package com.sampoom.backend.auth.jwt;
 import com.sampoom.backend.auth.common.exception.UnauthorizedException;
 import com.sampoom.backend.auth.common.response.ErrorStatus;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -46,9 +47,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 String userId = claims.getSubject();
                 String role = claims.get("role", String.class);
                 if (userId == null|| userId.isBlank() || role == null || role.isBlank()) {
-                        SecurityContextHolder.clearContext();
-                        filterChain.doFilter(request, response);
-                        return;
+                    log.warn("토큰 필요 필드가 누락되었습니다. userId: {}, role: {}", userId, role);
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
                 }
                 // Spring Security는 ROLE_ 접두사를 기대함
                 // 접두사가 없으면 붙여주고, 있으면 그대로 둔다.
@@ -78,13 +80,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
             }
         }
-
-        // Swagger나 테스트용으로 헤더도 허용
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
-        }
-
-        return null;
+        // Bearer 방식일 때
+        return request.getHeader("Authorization");
     }
 }
