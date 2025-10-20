@@ -46,8 +46,13 @@ public class SecurityConfig {
                     var corsConfig = new CorsConfiguration();
                     corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                     corsConfig.setAllowedHeaders(List.of("*"));
-                    corsConfig.setAllowedOrigins(List.of("https://sampoom.store"));
+                    corsConfig.setAllowedOrigins(List.of("https://sampoom.store"
+                            ,"http://localhost:8080"
+                            ,"http://localhost:3000"
+                    ));
                     corsConfig.setAllowCredentials(true);
+                    corsConfig.setExposedHeaders(List.of("Set-Cookie", "Authorization"));
+                    corsConfig.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Requested-With"));
                     return corsConfig;
                 }))
                 .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)

@@ -29,21 +29,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        String authHeader = request.getHeader("Authorization");
+        String accessToken = resolveAccessToken(request);
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        if (accessToken != null) {
+            if (accessToken.startsWith("Bearer ")) {
+                accessToken = accessToken.substring(7);
+            }
             try {
-                String token = authHeader.substring(7);
-                Claims claims = jwtProvider.parse(token);
+                Claims claims = jwtProvider.parse(accessToken);
                 // 토큰 타입 검증
                 String type = claims.get("type", String.class);
                 if ("refresh".equals(type)) {
                     throw new UnauthorizedException(ErrorStatus.TOKEN_TYPE_INVALID);
                 }
-
-                // role 검증
+                // 토큰에서 userId, role 가져오기
+                String userId = claims.getSubject();
                 String role = claims.get("role", String.class);
-                if (role == null || role.isBlank()) {
+                if (userId == null|| userId.isBlank() || role == null || role.isBlank()) {
                         SecurityContextHolder.clearContext();
                         filterChain.doFilter(request, response);
                         return;
@@ -52,7 +54,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 // 접두사가 없으면 붙여주고, 있으면 그대로 둔다.
                 String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        claims.getSubject(), null, List.of(() -> authority)
+                        userId, null, List.of(() -> authority)
                 );
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
