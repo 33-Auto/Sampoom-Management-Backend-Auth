@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,12 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @Value("${jwt.access-ttl-seconds}")
+    private long accessTtlSeconds;
+
+    @Value("${jwt.refresh-ttl-seconds}")
+    private long refreshTtlSeconds;
+
     @PostMapping("/login")
     @SecurityRequirement(name = "none")
     public ResponseEntity<ApiResponse<Void>> login(@Valid @RequestBody LoginRequest req, HttpServletResponse response) {
@@ -40,15 +47,15 @@ public class AuthController {
                 .secure(true)
                 .path("/")
                 .sameSite("None")
-                .maxAge(resp.getExpiresIn())
+                .maxAge(accessTtlSeconds)
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", resp.getRefreshToken())
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .sameSite("None")
-                .maxAge(1209600) // 2주
+                .sameSite("None")           // 배포할 땐 "Strict"
+                .maxAge(refreshTtlSeconds)  // 2주
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
