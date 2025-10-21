@@ -52,7 +52,7 @@ public class SecurityConfig {
                     ));
                     corsConfig.setAllowCredentials(true);
                     corsConfig.setExposedHeaders(List.of("Set-Cookie", "Authorization"));
-                    corsConfig.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Requested-With"));
+                    corsConfig.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Client-Type"));
                     return corsConfig;
                 }))
                 .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
