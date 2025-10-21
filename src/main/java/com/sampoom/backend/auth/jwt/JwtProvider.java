@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtProvider {
@@ -30,7 +31,7 @@ public class JwtProvider {
         return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
     }
 
-    public String createAccessToken(Long userId, String role, String name) {
+    public String createAccessToken(Long userId, String role, String name, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)
@@ -38,6 +39,7 @@ public class JwtProvider {
                 .claim("type", "access")
                 .claim("role", role)
                 .claim("name", name)
+                .setId(jti)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(accessTtlSec)))
                 .signWith(getKey(), SignatureAlgorithm.HS256)

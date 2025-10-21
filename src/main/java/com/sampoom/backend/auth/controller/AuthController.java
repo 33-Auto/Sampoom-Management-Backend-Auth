@@ -6,9 +6,10 @@ import com.sampoom.backend.auth.controller.dto.request.LoginRequest;
 import com.sampoom.backend.auth.controller.dto.request.RefreshRequest;
 import com.sampoom.backend.auth.controller.dto.response.LoginResponse;
 import com.sampoom.backend.auth.controller.dto.response.RefreshResponse;
+import com.sampoom.backend.auth.jwt.JwtAuthFilter;
 import com.sampoom.backend.auth.jwt.JwtProvider;
 import com.sampoom.backend.auth.service.AuthService;
-import com.sampoom.backend.auth.service.RefreshTokenService;
+import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,9 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @RestController
@@ -30,6 +29,8 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtProvider jwtProvider;
+    private final JwtAuthFilter jwtAuthFilter;
 
     @Value("${jwt.access-ttl-seconds}")
     private long accessTtlSeconds;
@@ -89,8 +90,9 @@ public class AuthController {
             HttpServletResponse response,
             @RequestHeader(value = "X-Client-Type", defaultValue = "APP") String clientType
     ) {
+        // 리프레시 토큰 추출
         String refreshToken = null;
-        // WEB: 쿠키에서 리프레시 토큰 추출
+        // WEB: 쿠키에서
         if ("WEB".equalsIgnoreCase(clientType)) {
             if (request.getCookies() != null) {
                 for (Cookie cookie : request.getCookies()) {
@@ -101,10 +103,30 @@ public class AuthController {
                 }
             }
         }
-        // APP: 헤더에서 리프레시 토큰 추출
+        // APP: 헤더에서
         else if ("APP".equalsIgnoreCase(clientType)) {
             if (refreshRequest != null) {
                 refreshToken = refreshRequest.getRefreshToken();
+            }
+        }
+        // 엑세스 토큰 추출
+        String accessToken = null;
+        // WEB: 쿠키에서
+        if ("WEB".equalsIgnoreCase(clientType)) {
+            if (request.getCookies() != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if ("ACCESS_TOKEN".equals(cookie.getName())) {
+                        accessToken = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+        }
+        // APP: 헤더에서
+        else if ("APP".equalsIgnoreCase(clientType)) {
+            String header = request.getHeader("Authorization");
+            if (header != null && header.startsWith("Bearer ")) {
+                accessToken = header;
             }
         }
 
@@ -112,7 +134,11 @@ public class AuthController {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
 
-        RefreshResponse resp = authService.refresh(refreshToken);
+        if (accessToken == null || accessToken.isBlank()){
+            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+        }
+
+        RefreshResponse resp = authService.refresh(refreshToken, accessToken);
 
         if ("WEB".equalsIgnoreCase(clientType)) {
             ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", resp.getAccessToken())
@@ -142,11 +168,14 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     @SecurityRequirement(name = "cookieAuth")
     public ResponseEntity<ApiResponse<Void>> logout(
-            Authentication authentication,
+            HttpServletRequest request,
             HttpServletResponse response,
             @RequestHeader(value = "X-Client-Type", defaultValue = "APP") String clientType
     ) {
-        Long userId = Long.valueOf(authentication.getName());
+        String accessToken = jwtAuthFilter.resolveAccessToken(request, clientType);
+        Claims claims = jwtProvider.parse(accessToken);
+
+        Long userId = Long.valueOf(claims.getSubject());
 
         // WEB: 쿠키 삭제
         if ("WEB".equalsIgnoreCase(clientType)) {
@@ -161,7 +190,7 @@ public class AuthController {
                     .build();
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
         }
-        authService.logout(userId);
+        authService.logout(userId, accessToken);
         return ApiResponse.success_only(SuccessStatus.OK);
     }
 }

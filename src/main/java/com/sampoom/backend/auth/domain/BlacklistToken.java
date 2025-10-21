@@ -6,9 +6,12 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "refresh_token")
-@Getter @NoArgsConstructor @AllArgsConstructor @Builder
-public class RefreshToken {
+@Table(name = "blacklist_token")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class BlacklistToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

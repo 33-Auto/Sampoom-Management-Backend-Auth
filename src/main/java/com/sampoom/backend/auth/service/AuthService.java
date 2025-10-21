@@ -15,6 +15,7 @@ import com.sampoom.backend.auth.jwt.JwtProvider;
 import feign.FeignException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,9 +38,9 @@ public class AuthService {
     private int refreshTokenExpiration;
 
     private final JwtProvider jwtProvider;
-    private final RefreshTokenService refreshService;
+    private final RefreshTokenService refreshTokenService;
+    private final BlacklistTokenService blacklistTokenService;
     private final UserClient userClient;
-    private final PasswordEncoder passwordEncoder;
 
 
     @Transactional
@@ -63,15 +64,15 @@ public class AuthService {
         UserResponse userResponse = user.getData();
 
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
-        refreshService.deleteAllByUser(userResponse.getUserId());
+        refreshTokenService.deleteAllByUser(userResponse.getUserId());
 
         // 토큰 발급
-        String access = jwtProvider.createAccessToken(userResponse.getUserId(), userResponse.getRole(), userResponse.getUserName());
         String jti = UUID.randomUUID().toString();
+        String access = jwtProvider.createAccessToken(userResponse.getUserId(), userResponse.getRole(), userResponse.getUserName(),jti);
         String refresh = jwtProvider.createRefreshToken(userResponse.getUserId(), userResponse.getRole(), userResponse.getUserName(), jti);
 
         // 리프레시 토큰 저장
-        refreshService.save(userResponse.getUserId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
+        refreshTokenService.save(userResponse.getUserId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
 
         return LoginResponse.builder()
                 .userId(userResponse.getUserId())
@@ -85,45 +86,58 @@ public class AuthService {
 
 
 @Transactional
-    public RefreshResponse refresh(String refreshToken) {
-    Claims claims;
+    public RefreshResponse refresh(String refreshToken, String accessToken) {
+        // 리프레시 토큰 검증
+        Claims refreshClaims;
         try {
             // 토큰 파싱 및 예외 처리
-            claims = jwtProvider.parse(refreshToken); // 만료 시 ExpiredJwtException 자동 발생
+            refreshClaims = jwtProvider.parse(refreshToken); // 만료 시 ExpiredJwtException 자동 발생
         } catch (ExpiredJwtException e) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_EXPIRED);
-        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+        } catch (JwtException | IllegalArgumentException e) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
 
-        // 토큰 타입 검증
-         String type = claims.get("type", String.class);
-         if (!"refresh".equals(type)) {
-             throw new UnauthorizedException(ErrorStatus.TOKEN_TYPE_INVALID);
-         }
-
-        Long userId = Long.valueOf(claims.getSubject());
-        String jti = claims.getId();
+        Long userId = Long.valueOf(refreshClaims.getSubject());
+        String jti = refreshClaims.getId();
 
         // 토큰 유효성 검증 (DB에 저장된 토큰과 비교)
-        if (!refreshService.validate(userId, jti, refreshToken)) {
+        if (!refreshTokenService.validate(userId, jti, refreshToken)) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
 
-        // 토큰에서 바로 정보 꺼내기 (DB 조회)
-        String role = claims.get("role", String.class);
-        String name = claims.get("name", String.class);
+        // 엑세스 토큰 처리
+        Claims accessClaims;
+        if (accessToken != null && !accessToken.isBlank()) {
+            accessToken = accessToken.substring(7);
+        }
+        // 기존 AccessToken 블랙리스트 등록 (만료돼도 등록 가능)
+        try {
+            accessClaims = jwtProvider.parse(accessToken);
+            blacklistTokenService.add(accessToken, accessClaims);
+        } catch (ExpiredJwtException e) {
+            accessClaims = e.getClaims();
+            if (accessClaims != null) {
+                blacklistTokenService.add(accessToken, accessClaims);
+            }
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+        }
 
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
-        refreshService.deleteAllByUser(userId);
+        refreshTokenService.deleteAllByUser(userId);
+
+        // 토큰에서 바로 정보 꺼내기 (DB 조회)
+        String role = refreshClaims.get("role", String.class);
+        String name = refreshClaims.get("name", String.class);
 
         // 새로운 Access/Refresh 토큰 생성
         String newJti = UUID.randomUUID().toString();
-        String newAccessToken = jwtProvider.createAccessToken(userId, role, name);
+        String newAccessToken = jwtProvider.createAccessToken(userId, role, name, newJti);
         String newRefreshToken = jwtProvider.createRefreshToken(userId, role, name, newJti);
 
         // 새 Refresh 토큰 저장
-        refreshService.save(userId, newJti, newRefreshToken, Instant.now().plusSeconds(refreshTokenExpiration));
+        refreshTokenService.save(userId, newJti, newRefreshToken, Instant.now().plusSeconds(refreshTokenExpiration));
 
         // 결과 반환
         return RefreshResponse.builder()
@@ -134,7 +148,10 @@ public class AuthService {
 }
 
     @Transactional
-    public void logout(Long userId) {
-        refreshService.deleteAllByUser(userId);
+    public void logout(Long userId, String accessToken) {
+        refreshTokenService.deleteAllByUser(userId);
+
+        Claims claims = jwtProvider.parse(accessToken);
+        blacklistTokenService.add(accessToken, claims);
     }
 }

@@ -2,6 +2,7 @@ package com.sampoom.backend.auth.jwt;
 
 import com.sampoom.backend.auth.common.exception.UnauthorizedException;
 import com.sampoom.backend.auth.common.response.ErrorStatus;
+import com.sampoom.backend.auth.service.BlacklistTokenService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,6 +26,7 @@ import java.util.List;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final BlacklistTokenService blacklistTokenService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -57,6 +59,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     throw new UnauthorizedException(ErrorStatus.TOKEN_TYPE_INVALID);
                 }
 
+                // 블랙리스트 검증
+                String jti = claims.getId();
+                if (blacklistTokenService.isBlacklisted(jti)) {
+                    throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+                }
+
                 String userId = claims.getSubject();
                 String role = claims.get("role", String.class);
                 if (userId == null || userId.isBlank() || role == null || role.isBlank()) {
@@ -80,7 +88,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String resolveAccessToken(HttpServletRequest request, String clientType) {
+    public String resolveAccessToken(HttpServletRequest request, String clientType) {
         // 앱: Authorization 헤더만 본다
         if ("APP".equalsIgnoreCase(clientType)) {
             String header = request.getHeader("Authorization");
