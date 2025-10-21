@@ -30,9 +30,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        String accessToken = resolveAccessToken(request);
 
-        if (accessToken != null) {
+        String clientType = request.getHeader("X-Client-Type");
+
+        // X-Client-Type 헤더가 비어 있으면 APP을 기본값으로 한다.
+        if (clientType == null) clientType = "APP";
+
+        // refresh 요청이면 필터를 아예 통과시킨다
+        String path = request.getRequestURI();
+        if (path.startsWith("/refresh") || path.startsWith("/login")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        // accessToken 추출
+        String accessToken = resolveAccessToken(request, clientType);
+
+        if (accessToken != null && !accessToken.isBlank()) {
             if (accessToken.startsWith("Bearer ")) {
                 accessToken = accessToken.substring(7);
             }
@@ -43,44 +56,48 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 if ("refresh".equals(type)) {
                     throw new UnauthorizedException(ErrorStatus.TOKEN_TYPE_INVALID);
                 }
-                // 토큰에서 userId, role 가져오기
+
                 String userId = claims.getSubject();
                 String role = claims.get("role", String.class);
-                if (userId == null|| userId.isBlank() || role == null || role.isBlank()) {
-                    log.warn("토큰 필요 필드가 누락되었습니다. userId: {}, role: {}", userId, role);
+                if (userId == null || userId.isBlank() || role == null || role.isBlank()) {
+                    log.warn("토큰 필드 누락: userId={}, role={}", userId, role);
                     SecurityContextHolder.clearContext();
                     filterChain.doFilter(request, response);
                     return;
                 }
-                // Spring Security는 ROLE_ 접두사를 기대함
-                // 접두사가 없으면 붙여주고, 있으면 그대로 둔다.
+
                 String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                var authentication = new UsernamePasswordAuthenticationToken(
                         userId, null, List.of(() -> authority)
                 );
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
-                // 토큰 검증 실패 시 SecurityContext 비움
                 SecurityContextHolder.clearContext();
                 throw e;
             }
         }
-
         filterChain.doFilter(request, response);
     }
 
-    // 쿠키에서 엑세스 토큰 인증
-    private String resolveAccessToken(HttpServletRequest request) {
-        // 쿠키에서 ACCESS_TOKEN 검색
-        if (request.getCookies() != null) {
+    private String resolveAccessToken(HttpServletRequest request, String clientType) {
+        // 앱: Authorization 헤더만 본다
+        if ("APP".equalsIgnoreCase(clientType)) {
+            String header = request.getHeader("Authorization");
+            if (header != null && header.startsWith("Bearer ")) {
+                return header.substring(7);
+            }
+            return null;
+        }
+
+        // 웹: 쿠키만 본다
+        if ("WEB".equalsIgnoreCase(clientType) && request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("ACCESS_TOKEN".equals(cookie.getName())) {
                     return cookie.getValue();
                 }
             }
         }
-        // Bearer 방식일 때
-        return request.getHeader("Authorization");
+        return null;
     }
 }
