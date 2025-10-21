@@ -140,6 +140,7 @@ public class AuthController {
 
     @PostMapping("/logout")
     @SecurityRequirement(name = "bearerAuth")
+    @SecurityRequirement(name = "cookieAuth")
     public ResponseEntity<ApiResponse<Void>> logout(
             Authentication authentication,
             HttpServletResponse response,
