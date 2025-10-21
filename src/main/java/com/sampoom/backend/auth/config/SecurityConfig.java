@@ -47,7 +47,7 @@ public class SecurityConfig {
                     corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                     corsConfig.setAllowedHeaders(List.of("*"));
                     corsConfig.setAllowedOrigins(List.of("https://sampoom.store"
-                            ,"http://localhost:8080"
+                            ,"http://localhost:8081"
                             ,"http://localhost:3000"
                     ));
                     corsConfig.setAllowCredentials(true);
@@ -61,13 +61,6 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json;charset=UTF-8");
-                            response.getWriter().write("""
-                    {
-                        "success": false,
-                        "code": 10406,
-                        "message": "유효하지 않은 토큰 타입입니다."
-                    }
-                    """);
                         })
                 );
         return http.build();

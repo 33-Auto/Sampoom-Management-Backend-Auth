@@ -39,7 +39,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @SecurityRequirement(name = "none")
-    public ResponseEntity<ApiResponse<Void>> login(@Valid @RequestBody LoginRequest req, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest req, HttpServletResponse response) {
         LoginResponse resp = authService.login(req);
 
         ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", resp.getAccessToken())
@@ -61,7 +61,7 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
-        return ApiResponse.success_only(SuccessStatus.OK);
+        return ApiResponse.success(SuccessStatus.OK,resp);
     }
 
     @PostMapping("/refresh")
