@@ -1,17 +1,17 @@
 package com.sampoom.auth.api.auth.service;
 
-import com.sampoom.auth.common.common.exception.InternalServerErrorException;
-import com.sampoom.auth.common.common.exception.NotFoundException;
-import com.sampoom.auth.common.common.exception.UnauthorizedException;
-import com.sampoom.auth.common.common.response.ApiResponse;
-import com.sampoom.auth.common.common.response.ErrorStatus;
+import com.sampoom.auth.common.exception.InternalServerErrorException;
+import com.sampoom.auth.common.exception.NotFoundException;
+import com.sampoom.auth.common.exception.UnauthorizedException;
+import com.sampoom.auth.common.response.ApiResponse;
+import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.dto.request.LoginRequest;
 import com.sampoom.auth.api.auth.external.client.UserClient;
 import com.sampoom.auth.api.auth.dto.response.LoginResponse;
 import com.sampoom.auth.api.auth.dto.response.RefreshResponse;
 import com.sampoom.auth.api.auth.external.dto.UserResponse;
 import com.sampoom.auth.api.auth.external.dto.VerifyLoginRequest;
-import com.sampoom.auth.common.common.jwt.JwtProvider;
+import com.sampoom.auth.common.jwt.JwtProvider;
 import feign.FeignException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;

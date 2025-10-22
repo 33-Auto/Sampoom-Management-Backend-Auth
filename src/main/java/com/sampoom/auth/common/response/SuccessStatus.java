@@ -1,4 +1,4 @@
-package com.sampoom.auth.common.common.response;
+package com.sampoom.auth.common.response;
 
 import lombok.AccessLevel;
 import lombok.Getter;

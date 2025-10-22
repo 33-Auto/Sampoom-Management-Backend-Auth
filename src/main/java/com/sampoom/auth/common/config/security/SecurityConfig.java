@@ -1,6 +1,6 @@
-package com.sampoom.auth.common.common.config.security;
+package com.sampoom.auth.common.config.security;
 
-import com.sampoom.auth.common.common.jwt.JwtAuthFilter;
+import com.sampoom.auth.common.jwt.JwtAuthFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

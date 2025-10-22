@@ -1,6 +1,6 @@
-package com.sampoom.auth.common.common.exception;
+package com.sampoom.auth.common.exception;
 
-import com.sampoom.auth.common.common.response.ErrorStatus;
+import com.sampoom.auth.common.response.ErrorStatus;
 import org.springframework.http.HttpStatus;
 
 public class BadRequestException extends BaseException {

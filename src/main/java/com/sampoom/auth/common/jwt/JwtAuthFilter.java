@@ -1,7 +1,7 @@
-package com.sampoom.auth.common.common.jwt;
+package com.sampoom.auth.common.jwt;
 
-import com.sampoom.auth.common.common.exception.UnauthorizedException;
-import com.sampoom.auth.common.common.response.ErrorStatus;
+import com.sampoom.auth.common.exception.UnauthorizedException;
+import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.service.BlacklistTokenService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;

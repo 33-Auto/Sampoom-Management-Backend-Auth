@@ -1,4 +1,4 @@
-package com.sampoom.auth.common.common.exception;
+package com.sampoom.auth.common.exception;
 
 import lombok.AccessLevel;
 import lombok.Getter;

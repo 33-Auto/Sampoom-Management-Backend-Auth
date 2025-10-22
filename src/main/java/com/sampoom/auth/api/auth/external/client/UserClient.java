@@ -1,6 +1,6 @@
 package com.sampoom.auth.api.auth.external.client;
 
-import com.sampoom.auth.common.common.response.ApiResponse;
+import com.sampoom.auth.common.response.ApiResponse;
 import com.sampoom.auth.api.auth.external.dto.UserResponse;
 import com.sampoom.auth.api.auth.external.dto.VerifyLoginRequest;
 import com.sampoom.auth.api.auth.external.fallback.UserClientFallback;

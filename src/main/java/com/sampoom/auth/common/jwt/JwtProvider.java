@@ -1,4 +1,4 @@
-package com.sampoom.auth.common.common.jwt;
+package com.sampoom.auth.common.jwt;
 
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
