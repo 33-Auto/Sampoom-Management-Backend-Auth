@@ -55,6 +55,8 @@ public class BlacklistTokenService {
     }
 
     public boolean isBlacklisted(String tokenId) {
+        // 우회될 가능성 고려
+        if (tokenId == null || tokenId.isBlank()) return true;
         return blacklistRepository.existsByTokenId(tokenId);
     }
 

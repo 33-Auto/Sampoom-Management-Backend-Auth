@@ -1,4 +1,4 @@
-package com.sampoom.backend.auth;
+package com.sampoom.auth;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
