@@ -10,7 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum ErrorStatus {
 
     // 400 BAD_REQUEST
-
+    JTI_NULL_BLANK(HttpStatus.BAD_REQUEST,"Null 또는 공백인 JTI(토큰 ID)입니다.",10409),
+    EXPIRATION_NULL(HttpStatus.BAD_REQUEST,"누락(Null)된 만료날짜입니다.",10410),
     // 401 UNAUTHORIZED
     USER_PASSWORD_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 비밀번호입니다.",10402),
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED,"유효하지 않은 토큰입니다.",10404),

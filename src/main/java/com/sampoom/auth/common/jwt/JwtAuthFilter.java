@@ -61,6 +61,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 // 블랙리스트 검증
                 String jti = claims.getId();
+                if (jti == null || jti.isBlank()) {
+                    throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+                }
                 if (blacklistTokenService.isBlacklisted(jti)) {
                     throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
                 }

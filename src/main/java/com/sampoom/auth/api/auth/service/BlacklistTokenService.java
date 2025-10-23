@@ -2,6 +2,9 @@ package com.sampoom.auth.api.auth.service;
 
 import com.sampoom.auth.api.auth.entity.BlacklistToken;
 import com.sampoom.auth.api.auth.repository.BlacklistTokenRepository;
+import com.sampoom.auth.common.exception.BadRequestException;
+import com.sampoom.auth.common.exception.UnauthorizedException;
+import com.sampoom.auth.common.response.ErrorStatus;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,6 +15,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +26,20 @@ public class BlacklistTokenService {
 
     public void add(String accessToken, Claims claims) {
         String jti = claims.getId();
+        if (jti == null || jti.isBlank()) {
+            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+        }
         String hash = hashToken(accessToken);
-        Long userId = Long.valueOf(claims.getSubject());
+        Long userId;
+        try {
+            userId = Long.valueOf(claims.getSubject());
+        } catch (NumberFormatException e) {
+            throw new BadRequestException(ErrorStatus.JTI_NULL_BLANK);
+        }
+        Date exp = claims.getExpiration();
+        if (exp == null) {
+            throw new BadRequestException(ErrorStatus.EXPIRATION_NULL); // 토큰 exp 누락 시 안전하게 중단
+        }
         Instant expiresAt = claims.getExpiration().toInstant();
 
         if (!blacklistRepository.existsByTokenId(jti)) {

@@ -108,7 +108,11 @@ public class AuthService {
         // 엑세스 토큰 처리
         Claims accessClaims;
         if (accessToken != null && !accessToken.isBlank()) {
-            accessToken = accessToken.substring(7);
+            if (accessToken.startsWith("Bearer ")) {
+                accessToken = accessToken.substring(7);
+            } else {
+                throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+            }
         }
         // 기존 AccessToken 블랙리스트 등록 (만료돼도 등록 가능)
         try {
@@ -120,6 +124,11 @@ public class AuthService {
                 blacklistTokenService.add(accessToken, accessClaims);
             }
         } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+        }
+
+        // 교차 검증: refresh와 access가 동일 사용자/세션(jti)인지 확인
+        if (!userId.equals(Long.valueOf(accessClaims.getSubject())) || !jti.equals(accessClaims.getId())) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
 
