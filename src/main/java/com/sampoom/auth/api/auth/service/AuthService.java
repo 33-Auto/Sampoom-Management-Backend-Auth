@@ -84,7 +84,7 @@ public class AuthService {
     }
 
 
-@Transactional
+    @Transactional
     public RefreshResponse refresh(String refreshToken, String accessToken) {
         // 리프레시 토큰 검증
         Claims refreshClaims;
@@ -107,21 +107,17 @@ public class AuthService {
 
         // 엑세스 토큰 처리
         Claims accessClaims;
-        if (accessToken != null && !accessToken.isBlank()) {
-            if (accessToken.startsWith("Bearer ")) {
-                accessToken = accessToken.substring(7);
-            } else {
-                throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
-            }
+        String normalizedAccessToken=stripBearer(accessToken);
+        if (normalizedAccessToken != null && !normalizedAccessToken.isBlank()) {
         }
         // 기존 AccessToken 블랙리스트 등록 (만료돼도 등록 가능)
         try {
-            accessClaims = jwtProvider.parse(accessToken);
-            blacklistTokenService.add(accessToken, accessClaims);
+            accessClaims = jwtProvider.parse(normalizedAccessToken);
+            blacklistTokenService.add(normalizedAccessToken, accessClaims);
         } catch (ExpiredJwtException e) {
             accessClaims = e.getClaims();
             if (accessClaims != null) {
-                blacklistTokenService.add(accessToken, accessClaims);
+                blacklistTokenService.add(normalizedAccessToken, accessClaims);
             }
         } catch (JwtException | IllegalArgumentException e) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
@@ -161,5 +157,14 @@ public class AuthService {
 
         Claims claims = jwtProvider.parse(accessToken);
         blacklistTokenService.add(accessToken, claims);
+    }
+
+
+    private String stripBearer(String token) {
+        if (token == null) return null;
+        if (token.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return token.substring(7);
+        }
+        return token;
     }
 }

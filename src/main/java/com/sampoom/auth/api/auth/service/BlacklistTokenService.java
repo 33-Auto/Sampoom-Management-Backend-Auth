@@ -34,7 +34,7 @@ public class BlacklistTokenService {
         try {
             userId = Long.valueOf(claims.getSubject());
         } catch (NumberFormatException e) {
-            throw new BadRequestException(ErrorStatus.JTI_NULL_BLANK);
+            throw new BadRequestException(ErrorStatus.TOKEN_INVALID);
         }
         Date exp = claims.getExpiration();
         if (exp == null) {
