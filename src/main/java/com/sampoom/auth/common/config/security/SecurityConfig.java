@@ -45,7 +45,6 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     var corsConfig = new CorsConfiguration();
                     corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-                    corsConfig.setAllowedHeaders(List.of("*"));
                     corsConfig.setAllowedOrigins(List.of("https://sampoom.store"
                             ,"http://localhost:8081"
                             ,"http://localhost:3000"

@@ -53,16 +53,16 @@ public class AuthController {
             ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", resp.getAccessToken())
                     .httpOnly(true)
                     .secure(true)
-                    .path("/")
                     .sameSite("None")
+                    .path("/")
                     .maxAge(accessTtlSeconds)
                     .build();
 
             ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", resp.getRefreshToken())
                     .httpOnly(true)
                     .secure(true)
-                    .path("/")
                     .sameSite("None")
+                    .path("/")
                     .maxAge(refreshTtlSeconds)
                     .build();
 
@@ -182,11 +182,17 @@ public class AuthController {
         // WEB: 쿠키 삭제
         if ("WEB".equalsIgnoreCase(clientType)) {
             ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", "")
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("None")
                     .path("/")
                     .maxAge(0)
                     .build();
             response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
             ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", "")
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("None")
                     .path("/")
                     .maxAge(0)
                     .build();
