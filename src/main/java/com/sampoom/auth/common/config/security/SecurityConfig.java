@@ -50,7 +50,7 @@ public class SecurityConfig {
                             ,"http://localhost:3000"
                     ));
                     corsConfig.setAllowCredentials(true);
-                    corsConfig.setExposedHeaders(List.of("Set-Cookie", "Authorization"));
+                    corsConfig.setExposedHeaders(List.of("Authorization"));
                     corsConfig.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Client-Type"));
                     return corsConfig;
                 }))

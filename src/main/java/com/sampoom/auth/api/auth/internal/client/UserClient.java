@@ -1,9 +1,8 @@
-package com.sampoom.auth.api.auth.external.client;
+package com.sampoom.auth.api.auth.internal.client;
 
+import com.sampoom.auth.api.auth.internal.dto.UserProfile;
 import com.sampoom.auth.common.response.ApiResponse;
-import com.sampoom.auth.api.auth.external.dto.UserResponse;
-import com.sampoom.auth.api.auth.external.dto.VerifyLoginRequest;
-import com.sampoom.auth.api.auth.external.fallback.UserClientFallback;
+import com.sampoom.auth.api.auth.internal.fallback.UserClientFallback;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
         fallback = UserClientFallback.class
 )
 public interface UserClient {
-
-    @PostMapping("/verify")
-    ApiResponse<UserResponse> verifyLogin(@RequestBody VerifyLoginRequest verifyLoginRequest);
+    @PostMapping("/profile")
+    ApiResponse<Void> createProfile(@RequestBody UserProfile req);
 }

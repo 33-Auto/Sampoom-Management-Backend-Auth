@@ -29,14 +29,13 @@ public class JwtProvider {
         return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
     }
 
-    public String createAccessToken(Long userId, String role, String name, String jti) {
+    public String createAccessToken(Long userId, String role, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)
                 .setSubject(String.valueOf(userId))
                 .claim("type", "access")
                 .claim("role", role)
-                .claim("name", name)
                 .setId(jti)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(accessTtlSec)))
@@ -44,14 +43,13 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String createRefreshToken(Long userId, String role, String name, String jti) {
+    public String createRefreshToken(Long userId, String role, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)
                 .setSubject(String.valueOf(userId))
                 .claim("type", "refresh")
                 .claim("role", role)
-                .claim("name", name)
                 .setId(jti)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(refreshTtlSec)))

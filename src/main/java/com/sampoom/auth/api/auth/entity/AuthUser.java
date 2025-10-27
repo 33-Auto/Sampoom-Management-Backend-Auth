@@ -1,10 +1,10 @@
 package com.sampoom.auth.api.auth.entity;
 
+import com.sampoom.auth.common.entity.BaseTimeEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "auth_user")
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-class AuthUser {
+public class AuthUser extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,8 +26,24 @@ class AuthUser {
     @Column(nullable = false)
     private String role;
 
+    @Column(nullable = false)
+    private boolean isDeleted;
+
+    private LocalDateTime deletedAt;
+
     @PrePersist
     public void prePersist() {
         if (this.role == null) this.role = "ROLE_USER";
+    }
+
+    // 유저 비활성화
+    public void softDelete() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    // 유저 재활성화: 최근 비활성화 이력 보존
+    public void restore() {
+        this.isDeleted = false;
     }
 }

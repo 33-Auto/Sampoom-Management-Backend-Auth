@@ -7,6 +7,8 @@ import com.sampoom.auth.common.exception.UnauthorizedException;
 import com.sampoom.auth.common.response.ErrorStatus;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -38,7 +41,7 @@ public class BlacklistTokenService {
         }
         Date exp = claims.getExpiration();
         if (exp == null) {
-            throw new BadRequestException(ErrorStatus.EXPIRATION_NULL); // 토큰 exp 누락 시 안전하게 중단
+            throw new BadRequestException(ErrorStatus.EXPIRATION_NULL); // 토큰 만료시간 누락 시 안전하게 중단
         }
         Instant expiresAt = claims.getExpiration().toInstant();
 
@@ -55,13 +58,19 @@ public class BlacklistTokenService {
     }
 
     public boolean isBlacklisted(String tokenId) {
-        // 우회될 가능성 고려
+        // 우회될 가능성 고려, Null/공백일 때
         if (tokenId == null || tokenId.isBlank()) return true;
         return blacklistRepository.existsByTokenId(tokenId);
     }
 
+    // 만료된 블랙리스트 자동 정리 (스케줄러)
+    @Scheduled(cron = "0 0 * * * *") // 매시간 실행
+    @Transactional
     public void cleanupExpiredTokens() {
-        blacklistRepository.deleteAllByExpiresAtBefore(Instant.now());
+        int deleted = blacklistRepository.deleteAllByExpiresAtBefore(Instant.now());
+        if (deleted > 0) {
+            log.info("블랙리스트 : {}", deleted);
+        }
     }
 
     private String hashToken(String token) {
