@@ -48,9 +48,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String accessToken = resolveAccessToken(request, clientType);
 
         if (accessToken != null && !accessToken.isBlank()) {
-            if (accessToken.startsWith("Bearer ")) {
-                accessToken = accessToken.substring(7);
-            }
             try {
                 Claims claims = jwtProvider.parse(accessToken);
                 // 토큰 타입 검증
