@@ -68,7 +68,7 @@ public class JwtProvider {
     public String issueServiceToken(String targetService) {
         Map<String, Object> claims = Map.of(
                 "role", "SVC_AUTH",
-                "aud", targetService,
+                "aud", "user-service",
                 "type", "service"
         );
 
