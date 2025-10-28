@@ -47,6 +47,8 @@ public class SecurityConfig {
                     var corsConfig = new CorsConfiguration();
                     corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                     corsConfig.setAllowedOrigins(List.of("https://sampoom.store"
+                            ,"https://samsam.autos"
+                            ,"https://sampoom-management-frontend.vercel.app"
                             ,"http://localhost:8081"
                             ,"http://localhost:3000"
                     ));
