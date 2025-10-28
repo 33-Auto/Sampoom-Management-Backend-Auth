@@ -129,7 +129,7 @@ public class AuthController {
         }
 
         // 토큰 유효성 검증
-        if (refreshToken == null || refreshToken.isBlank() || accessToken==null || accessToken.isBlank()) {
+        if (refreshToken == null || refreshToken.isBlank() || accessToken == null || accessToken.isBlank()) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
 

@@ -13,6 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
         fallback = UserClientFallback.class
 )
 public interface UserClient {
-    @PostMapping("/profile")
+    @PostMapping("/internal/profile")
     ApiResponse<Void> createProfile(@RequestBody AuthUserProfile req);
 }

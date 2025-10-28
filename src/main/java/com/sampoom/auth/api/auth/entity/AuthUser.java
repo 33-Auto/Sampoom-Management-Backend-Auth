@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class AuthUser extends BaseTimeEntity {
+
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -23,9 +25,11 @@ public class AuthUser extends BaseTimeEntity {
     @Column(nullable = false)
     private String password;
 
+    @Builder.Default
     @Column(nullable = false)
     private String role;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean isDeleted;
 

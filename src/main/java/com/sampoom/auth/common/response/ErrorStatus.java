@@ -23,7 +23,6 @@ public enum ErrorStatus {
     // 404 NOT_FOUND
     USER_BY_EMAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "이메일로 해당 유저를 찾을 수 없습니다.",10401),
     // 409 CONFLICT
-    // 409 CONFLICT
     USER_EMAIL_DUPLICATED(HttpStatus.CONFLICT, "이미 존재하는 유저의 이메일입니다.", 10400),
 
     // 500 INTERNAL_SERVER_ERROR

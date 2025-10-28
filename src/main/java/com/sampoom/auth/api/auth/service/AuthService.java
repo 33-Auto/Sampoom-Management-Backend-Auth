@@ -7,16 +7,16 @@ import com.sampoom.auth.api.auth.internal.dto.AuthUserProfile;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
 import com.sampoom.auth.common.exception.BadRequestException;
 import com.sampoom.auth.common.exception.ConflictException;
+import com.sampoom.auth.common.exception.InternalServerErrorException;
 import com.sampoom.auth.common.exception.UnauthorizedException;
+import com.sampoom.auth.common.response.ApiResponse;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.dto.request.LoginRequest;
 import com.sampoom.auth.api.auth.internal.client.UserClient;
 import com.sampoom.auth.api.auth.dto.response.LoginResponse;
 import com.sampoom.auth.api.auth.dto.response.RefreshResponse;
 import com.sampoom.auth.common.jwt.JwtProvider;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +24,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,16 +67,26 @@ public class AuthService {
                 .password(passwordEncoder.encode(req.getPassword()))
                 .role("ROLE_USER")
                 .build();
+
         authUserRepository.save(authUser);
 
         // User 프로필 생성 ( 이메일, 비밀번호를 제외한 User 기본 정보 )
-        userClient.createProfile(AuthUserProfile.builder()
-                .userId(authUser.getId())
-                .userName(req.getUserName())
-                .workspace(req.getWorkspace())
-                .branch(req.getBranch())
-                .position(req.getPosition())
-                .build());
+        try {
+            ApiResponse<Void> response = userClient.createProfile(AuthUserProfile.builder()
+                    .userId(authUser.getId())
+                    .userName(req.getUserName())
+                    .workspace(req.getWorkspace())
+                    .branch(req.getBranch())
+                    .position(req.getPosition())
+                    .build());
+
+            if (response == null || !response.getSuccess()) {
+                throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
+            }
+        } catch (Exception e) {
+            // AuthUser 롤백 보장
+            throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
+        }
 
         // 응답 DTO 반환
         return SignupResponse.builder()

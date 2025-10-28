@@ -7,8 +7,10 @@ import org.springframework.stereotype.Component;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 
 @Component
 public class JwtProvider {
@@ -60,5 +62,22 @@ public class JwtProvider {
     public Claims parse(String token) {
         return Jwts.parserBuilder().setSigningKey(getKey()).build()
                 .parseClaimsJws(token).getBody();
+    }
+
+    // 내부 Feign용 인증 토큰
+    public String issueServiceToken(String targetService) {
+        Map<String, Object> claims = Map.of(
+                "role", "SVC_AUTH",
+                "aud", targetService,
+                "type", "service"
+        );
+
+        return Jwts.builder()
+                .setIssuer("auth-service")
+                .setClaims(claims)
+                .setIssuedAt(new Date())
+                .setExpiration(Date.from(Instant.now().plus(Duration.ofMinutes(5))))
+                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 }
