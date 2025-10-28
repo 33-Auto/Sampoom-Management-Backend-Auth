@@ -3,7 +3,7 @@ package com.sampoom.auth.api.auth.service;
 import com.sampoom.auth.api.auth.dto.request.SignupRequest;
 import com.sampoom.auth.api.auth.dto.response.SignupResponse;
 import com.sampoom.auth.api.auth.entity.AuthUser;
-import com.sampoom.auth.api.auth.internal.dto.UserProfile;
+import com.sampoom.auth.api.auth.internal.dto.AuthUserProfile;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
 import com.sampoom.auth.common.exception.BadRequestException;
 import com.sampoom.auth.common.exception.ConflictException;
@@ -67,7 +67,7 @@ public class AuthService {
         authUserRepository.save(authUser);
 
         // User 프로필 생성 ( 이메일, 비밀번호를 제외한 User 기본 정보 )
-        userClient.createProfile(UserProfile.builder()
+        userClient.createProfile(AuthUserProfile.builder()
                 .userId(authUser.getId())
                 .userName(req.getUserName())
                 .workspace(req.getWorkspace())

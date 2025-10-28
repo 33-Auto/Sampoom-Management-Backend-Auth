@@ -6,7 +6,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserProfile {
+public class AuthUserProfile {
     private Long userId;       // Auth에서 생성한 userId
     private String userName;   // 사용자 이름
     private String workspace;  // 근무지(대리점, 창고, 공장 등)
