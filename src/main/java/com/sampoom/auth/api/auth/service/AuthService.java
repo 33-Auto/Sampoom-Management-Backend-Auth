@@ -1,28 +1,34 @@
 package com.sampoom.auth.api.auth.service;
 
+import com.sampoom.auth.api.auth.dto.request.SignupRequest;
+import com.sampoom.auth.api.auth.dto.response.SignupResponse;
+import com.sampoom.auth.api.auth.entity.AuthUser;
+import com.sampoom.auth.api.auth.internal.dto.AuthUserProfile;
+import com.sampoom.auth.api.auth.repository.AuthUserRepository;
+import com.sampoom.auth.common.exception.BadRequestException;
+import com.sampoom.auth.common.exception.ConflictException;
 import com.sampoom.auth.common.exception.InternalServerErrorException;
-import com.sampoom.auth.common.exception.NotFoundException;
 import com.sampoom.auth.common.exception.UnauthorizedException;
 import com.sampoom.auth.common.response.ApiResponse;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.dto.request.LoginRequest;
-import com.sampoom.auth.api.auth.external.client.UserClient;
+import com.sampoom.auth.api.auth.internal.client.UserClient;
 import com.sampoom.auth.api.auth.dto.response.LoginResponse;
 import com.sampoom.auth.api.auth.dto.response.RefreshResponse;
-import com.sampoom.auth.api.auth.external.dto.UserResponse;
-import com.sampoom.auth.api.auth.external.dto.VerifyLoginRequest;
 import com.sampoom.auth.common.jwt.JwtProvider;
-import feign.FeignException;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -39,44 +45,86 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
     private final BlacklistTokenService blacklistTokenService;
+    private final AuthUserRepository authUserRepository;
+    private final PasswordEncoder passwordEncoder;
     private final UserClient userClient;
 
+    public SignupResponse signup(SignupRequest req) {
+        // 유저 비활성화 여부 확인
+        Optional<AuthUser> user =  authUserRepository.findByEmail(req.getEmail());
+        if(user.isPresent()) {
+            // 중복 이메일 확인
+            if (!user.get().isDeleted()) {
+                throw new ConflictException(ErrorStatus.USER_EMAIL_DUPLICATED);
+            }
+            // 비활성화된 유저
+            throw new UnauthorizedException(ErrorStatus.USER_DEACTIVATED);
+        }
 
-    @Transactional
-    public LoginResponse login(LoginRequest req) {
-        // 바로 받아오면 예외 처리 하기 전에 에러
-        ApiResponse<UserResponse> user;
+        // AuthUser 생성 ( 이메일, 비밀번호만 담은 User 인증 정보 )
+        AuthUser authUser = AuthUser.builder()
+                .email(req.getEmail())
+                .password(passwordEncoder.encode(req.getPassword()))
+                .role("ROLE_USER")
+                .build();
 
-        // 유저 조회 및 예외 처리
+        authUserRepository.save(authUser);
+
+        // User 프로필 생성 ( 이메일, 비밀번호를 제외한 User 기본 정보 )
         try {
-            user = userClient.verifyLogin(new VerifyLoginRequest(req.getEmail(),req.getPassword()));
-        } catch (FeignException.NotFound e) {
-            // 이메일 존재 X
-            throw new NotFoundException(ErrorStatus.USER_BY_EMAIL_NOT_FOUND);
-        } catch (FeignException.Unauthorized e){
-            // 비밀번호 불일치
-            throw new UnauthorizedException(ErrorStatus.USER_PASSWORD_INVALID);
-        } catch (FeignException.InternalServerError e) {
-            // User 서비스 자체 문제 (다운 등)
+            ApiResponse<Void> response = userClient.createProfile(AuthUserProfile.builder()
+                    .userId(authUser.getId())
+                    .userName(req.getUserName())
+                    .workspace(req.getWorkspace())
+                    .branch(req.getBranch())
+                    .position(req.getPosition())
+                    .build());
+
+            if (response == null || !response.getSuccess()) {
+                throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
+            }
+        } catch (Exception e) {
+            // AuthUser 롤백 보장
             throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
         }
-        UserResponse userResponse = user.getData();
+
+        // 응답 DTO 반환
+        return SignupResponse.builder()
+                .userId(authUser.getId())
+                .email(req.getEmail())
+                .userName(req.getUserName())
+                .build();
+    }
+
+    public LoginResponse login(LoginRequest req) {
+        // user에 담자마자 이메일 존재 여부 체크
+        AuthUser user = authUserRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new UnauthorizedException(ErrorStatus.USER_BY_EMAIL_NOT_FOUND));
+
+        // 비활성화 유저
+        if (user.isDeleted()) {
+            throw new UnauthorizedException(ErrorStatus.USER_DEACTIVATED);
+        }
+
+        // 비밀번호 불일치
+        if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+            throw new UnauthorizedException(ErrorStatus.USER_PASSWORD_INVALID);
+        }
 
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
-        refreshTokenService.deleteAllByUser(userResponse.getUserId());
+        refreshTokenService.deleteAllByUser(user.getId());
 
         // 토큰 발급
         String jti = UUID.randomUUID().toString();
-        String access = jwtProvider.createAccessToken(userResponse.getUserId(), userResponse.getRole(), userResponse.getUserName(),jti);
-        String refresh = jwtProvider.createRefreshToken(userResponse.getUserId(), userResponse.getRole(), userResponse.getUserName(), jti);
+        String access = jwtProvider.createAccessToken(user.getId(), user.getRole(), jti);
+        String refresh = jwtProvider.createRefreshToken(user.getId(), user.getRole(), jti);
 
         // 리프레시 토큰 저장
-        refreshTokenService.save(userResponse.getUserId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
+        refreshTokenService.save(user.getId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
 
         return LoginResponse.builder()
-                .userId(userResponse.getUserId())
-                .userName(userResponse.getUserName())
-                .role(userResponse.getRole())
+                .userId(user.getId())
+                .role(user.getRole())
                 .accessToken(access)
                 .refreshToken(refresh)
                 .expiresIn(accessTokenExpiration)
@@ -84,7 +132,6 @@ public class AuthService {
     }
 
 
-    @Transactional
     public RefreshResponse refresh(String refreshToken, String accessToken) {
         // 리프레시 토큰 검증
         Claims refreshClaims;
@@ -108,7 +155,8 @@ public class AuthService {
         // 엑세스 토큰 처리
         Claims accessClaims;
         String normalizedAccessToken=stripBearer(accessToken);
-        if (normalizedAccessToken != null && !normalizedAccessToken.isBlank()) {
+        if (normalizedAccessToken == null || normalizedAccessToken.isBlank()) {
+            throw new BadRequestException(ErrorStatus.TOKEN_NULL_BLANK);
         }
         // 기존 AccessToken 블랙리스트 등록 (만료돼도 등록 가능)
         try {
@@ -133,12 +181,11 @@ public class AuthService {
 
         // 토큰에서 바로 정보 꺼내기 (DB 조회)
         String role = refreshClaims.get("role", String.class);
-        String name = refreshClaims.get("name", String.class);
 
         // 새로운 Access/Refresh 토큰 생성
         String newJti = UUID.randomUUID().toString();
-        String newAccessToken = jwtProvider.createAccessToken(userId, role, name, newJti);
-        String newRefreshToken = jwtProvider.createRefreshToken(userId, role, name, newJti);
+        String newAccessToken = jwtProvider.createAccessToken(userId, role, newJti);
+        String newRefreshToken = jwtProvider.createRefreshToken(userId, role, newJti);
 
         // 새 Refresh 토큰 저장
         refreshTokenService.save(userId, newJti, newRefreshToken, Instant.now().plusSeconds(refreshTokenExpiration));
@@ -151,12 +198,23 @@ public class AuthService {
                 .build();
 }
 
-    @Transactional
     public void logout(Long userId, String accessToken) {
-        refreshTokenService.deleteAllByUser(userId);
+        Claims claims;
+        // 만료된 토큰도 블랙리스트 등록
+        try {
+            claims = jwtProvider.parse(accessToken);
+        } catch (ExpiredJwtException e) {
+            claims = e.getClaims(); // 만료돼도 jti, sub, exp는 있음
+        }
 
-        Claims claims = jwtProvider.parse(accessToken);
+        if (claims == null) {
+            throw new UnauthorizedException(ErrorStatus.TOKEN_NULL_BLANK);
+        }
+
+        refreshTokenService.deleteAllByUser(userId);
         blacklistTokenService.add(accessToken, claims);
+
+        log.info("[Logout] userId={} / jti={} / exp={}", userId, claims.getId(), claims.getExpiration());
     }
 
 

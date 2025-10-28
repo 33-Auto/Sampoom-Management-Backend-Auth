@@ -7,8 +7,10 @@ import org.springframework.stereotype.Component;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 
 @Component
 public class JwtProvider {
@@ -29,14 +31,13 @@ public class JwtProvider {
         return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
     }
 
-    public String createAccessToken(Long userId, String role, String name, String jti) {
+    public String createAccessToken(Long userId, String role, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)
                 .setSubject(String.valueOf(userId))
                 .claim("type", "access")
                 .claim("role", role)
-                .claim("name", name)
                 .setId(jti)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(accessTtlSec)))
@@ -44,14 +45,13 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String createRefreshToken(Long userId, String role, String name, String jti) {
+    public String createRefreshToken(Long userId, String role, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)
                 .setSubject(String.valueOf(userId))
                 .claim("type", "refresh")
                 .claim("role", role)
-                .claim("name", name)
                 .setId(jti)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(refreshTtlSec)))
@@ -62,5 +62,22 @@ public class JwtProvider {
     public Claims parse(String token) {
         return Jwts.parserBuilder().setSigningKey(getKey()).build()
                 .parseClaimsJws(token).getBody();
+    }
+
+    // 내부 Feign용 인증 토큰
+    public String issueServiceToken(String targetService) {
+        Map<String, Object> claims = Map.of(
+                "role", "SVC_AUTH",
+                "aud", targetService,
+                "type", "service"
+        );
+
+        return Jwts.builder()
+                .setIssuer("auth-service")
+                .setClaims(claims)
+                .setIssuedAt(new Date())
+                .setExpiration(Date.from(Instant.now().plus(Duration.ofMinutes(5))))
+                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 }

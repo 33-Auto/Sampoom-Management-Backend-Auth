@@ -27,6 +27,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/signup",
                                 "/login",
                                 "/refresh",
                                 "/swagger-ui/**",
@@ -45,13 +46,12 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     var corsConfig = new CorsConfiguration();
                     corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-                    corsConfig.setAllowedHeaders(List.of("*"));
                     corsConfig.setAllowedOrigins(List.of("https://sampoom.store"
                             ,"http://localhost:8081"
                             ,"http://localhost:3000"
                     ));
                     corsConfig.setAllowCredentials(true);
-                    corsConfig.setExposedHeaders(List.of("Set-Cookie", "Authorization"));
+                    corsConfig.setExposedHeaders(List.of("Authorization"));
                     corsConfig.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Client-Type"));
                     return corsConfig;
                 }))

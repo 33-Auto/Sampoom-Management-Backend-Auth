@@ -1,5 +1,7 @@
 package com.sampoom.auth.api.auth.controller;
 
+import com.sampoom.auth.api.auth.dto.request.SignupRequest;
+import com.sampoom.auth.api.auth.dto.response.SignupResponse;
 import com.sampoom.auth.common.exception.UnauthorizedException;
 import com.sampoom.auth.common.response.ApiResponse;
 import com.sampoom.auth.common.response.ErrorStatus;
@@ -25,6 +27,9 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import static com.sampoom.auth.api.auth.utils.CookieUtils.addAuthCookies;
+import static com.sampoom.auth.api.auth.utils.CookieUtils.clearAuthCookies;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -40,6 +45,12 @@ public class AuthController {
     @Value("${jwt.refresh-ttl-seconds}")
     private long refreshTtlSeconds;
 
+    @PostMapping("/signup")
+    public ResponseEntity<ApiResponse<SignupResponse>> signup(@Valid @RequestBody SignupRequest req) {
+        SignupResponse resp = authService.signup(req);
+        return ApiResponse.success(SuccessStatus.CREATED, resp);
+    }
+
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
             @Valid @RequestBody LoginRequest req,
@@ -49,25 +60,8 @@ public class AuthController {
         LoginResponse resp = authService.login(req);
 
         if ("WEB".equalsIgnoreCase(clientType)) {
-            // 쿠키 세팅
-            ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", resp.getAccessToken())
-                    .httpOnly(true)
-                    .secure(true)
-                    .path("/")
-                    .sameSite("None")
-                    .maxAge(accessTtlSeconds)
-                    .build();
-
-            ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", resp.getRefreshToken())
-                    .httpOnly(true)
-                    .secure(true)
-                    .path("/")
-                    .sameSite("None")
-                    .maxAge(refreshTtlSeconds)
-                    .build();
-
-            response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
-            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+            // 쿠키 세팅 유틸
+            addAuthCookies(response,resp.getAccessToken(),resp.getRefreshToken(),accessTtlSeconds,refreshTtlSeconds);
 
             // WEB: body에 토큰 제외
             LoginResponse webResp = LoginResponse.builder()
@@ -92,12 +86,14 @@ public class AuthController {
             HttpServletResponse response,
             @RequestHeader(value = "X-Client-Type", defaultValue = "APP") String clientType
     ) {
-        // 리프레시 토큰 추출
+    // 리프레시 토큰 추출
         String refreshToken = null;
         // WEB: 쿠키에서
         if ("WEB".equalsIgnoreCase(clientType)) {
             if (request.getCookies() != null) {
+                // 두 쿠키 중에
                 for (Cookie cookie : request.getCookies()) {
+                    // 리프레시 토큰 쿠키인 것 추출
                     if ("REFRESH_TOKEN".equals(cookie.getName())) {
                         refreshToken = cookie.getValue();
                         break;
@@ -111,12 +107,15 @@ public class AuthController {
                 refreshToken = refreshRequest.getRefreshToken();
             }
         }
-        // 엑세스 토큰 추출
+
+    // 엑세스 토큰 추출
         String accessToken = null;
         // WEB: 쿠키에서
         if ("WEB".equalsIgnoreCase(clientType)) {
             if (request.getCookies() != null) {
+                // 두 쿠키 중에
                 for (Cookie cookie : request.getCookies()) {
+                    // 엑세스 토큰 쿠키인 것 추출
                     if ("ACCESS_TOKEN".equals(cookie.getName())) {
                         accessToken = cookie.getValue();
                         break;
@@ -126,41 +125,18 @@ public class AuthController {
         }
         // APP: 헤더에서
         else if ("APP".equalsIgnoreCase(clientType)) {
-            String header = request.getHeader("Authorization");
-            if (header != null && header.startsWith("Bearer ")) {
-                accessToken = header;
-            }
+            accessToken = jwtAuthFilter.resolveAccessToken(request, clientType);
         }
 
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
-        }
-
-        if (accessToken == null || accessToken.isBlank()){
+        // 토큰 유효성 검증
+        if (refreshToken == null || refreshToken.isBlank() || accessToken == null || accessToken.isBlank()) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
 
         RefreshResponse resp = authService.refresh(refreshToken, accessToken);
 
         if ("WEB".equalsIgnoreCase(clientType)) {
-            ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", resp.getAccessToken())
-                    .httpOnly(true)
-                    .secure(true)
-                    .path("/")
-                    .sameSite("None")
-                    .maxAge(accessTtlSeconds)
-                    .build();
-
-            ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", resp.getRefreshToken())
-                    .httpOnly(true)
-                    .secure(true)
-                    .path("/")
-                    .sameSite("None")
-                    .maxAge(refreshTtlSeconds)
-                    .build();
-
-            response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
-            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+            addAuthCookies(response,resp.getAccessToken(),resp.getRefreshToken(), accessTtlSeconds, refreshTtlSeconds);
         }
         return ApiResponse.success(SuccessStatus.OK,resp);
     }
@@ -168,7 +144,6 @@ public class AuthController {
 
     @PostMapping("/logout")
     @SecurityRequirement(name = "bearerAuth")
-    @SecurityRequirement(name = "cookieAuth")
     public ResponseEntity<ApiResponse<Void>> logout(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -181,17 +156,10 @@ public class AuthController {
 
         // WEB: 쿠키 삭제
         if ("WEB".equalsIgnoreCase(clientType)) {
-            ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", "")
-                    .path("/")
-                    .maxAge(0)
-                    .build();
-            response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
-            ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", "")
-                    .path("/")
-                    .maxAge(0)
-                    .build();
-            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+            clearAuthCookies(response);
         }
+
+
         authService.logout(userId, accessToken);
         return ApiResponse.success_only(SuccessStatus.OK);
     }
