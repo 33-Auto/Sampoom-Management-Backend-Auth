@@ -27,11 +27,11 @@ public class AuthUser extends BaseTimeEntity {
 
     @Builder.Default
     @Column(nullable = false)
-    private String role;
+    private String role = "ROLE_USER";
 
     @Builder.Default
     @Column(nullable = false)
-    private boolean isDeleted;
+    private boolean isDeleted= false;
 
     private LocalDateTime deletedAt;
 
