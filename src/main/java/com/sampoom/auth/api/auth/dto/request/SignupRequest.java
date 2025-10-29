@@ -11,18 +11,20 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class SignupRequest {
+    // AuthUser
     @NotBlank
     @Email
     private String email;
-
     @NotBlank
     @Size(min = 8, max = 64)
     private String password;
 
-    private String workspace;
-    private String branch;
-
+    // User(Profile)
     @NotBlank
     private String userName;
+
+    // Employee
+    private String workspace;
+    private String branch;
     private String position;
 }

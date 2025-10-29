@@ -1,10 +1,14 @@
 package com.sampoom.auth.api.auth.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sampoom.auth.api.auth.dto.request.SignupRequest;
 import com.sampoom.auth.api.auth.dto.response.SignupResponse;
 import com.sampoom.auth.api.auth.entity.AuthUser;
+import com.sampoom.auth.api.auth.event.UserSignedUpEvent;
 import com.sampoom.auth.api.auth.internal.dto.AuthUserProfile;
+import com.sampoom.auth.api.auth.outbox.OutboxEvent;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
+import com.sampoom.auth.api.auth.repository.OutboxRepository;
 import com.sampoom.auth.common.exception.BadRequestException;
 import com.sampoom.auth.common.exception.ConflictException;
 import com.sampoom.auth.common.exception.InternalServerErrorException;
@@ -23,13 +27,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import static org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT;
 
 @Slf4j
 @Transactional
@@ -41,14 +45,19 @@ public class AuthService {
     private int accessTokenExpiration;
     @Value("${jwt.refresh-ttl-seconds}")
     private int refreshTokenExpiration;
-
+    // 인증 관련
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
     private final BlacklistTokenService blacklistTokenService;
     private final AuthUserRepository authUserRepository;
     private final PasswordEncoder passwordEncoder;
+    // 통신 관련
     private final UserClient userClient;
+    private final ObjectMapper objectMapper;
+    private final OutboxRepository outboxRepo;
 
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
     public SignupResponse signup(SignupRequest req) {
         // 유저 비활성화 여부 확인
         Optional<AuthUser> user =  authUserRepository.findByEmail(req.getEmail());
@@ -62,13 +71,40 @@ public class AuthService {
         }
 
         // AuthUser 생성 ( 이메일, 비밀번호만 담은 User 인증 정보 )
-        AuthUser authUser = AuthUser.builder()
-                .email(req.getEmail())
-                .password(passwordEncoder.encode(req.getPassword()))
-                .role("ROLE_USER")
+        AuthUser authUser = authUserRepository.save(
+                AuthUser.builder()
+                        .email(req.getEmail())
+                        .password(passwordEncoder.encode(req.getPassword()))
+                        .role("ROLE_USER")
+                        .build()
+        );
+
+        // Outbox 이벤트 생성 (User & Employee가 구독)
+        var evt = UserSignedUpEvent.builder()
+                .eventType("UserSignup")
+                .occurredAt(java.time.OffsetDateTime.now().toString())
+                .payload(UserSignedUpEvent.Payload.builder()
+                        .userId(authUser.getId())
+                        .email(authUser.getEmail())
+                        .role(authUser.getRole())
+                        .userName(req.getUserName())
+                        .workspace(req.getWorkspace())
+                        .branch(req.getBranch())
+                        .position(req.getPosition())
+                        .build())
                 .build();
 
-        authUserRepository.save(authUser);
+        try {
+            String payloadJson = objectMapper.writeValueAsString(evt);
+            outboxRepo.save(OutboxEvent.builder()
+                    .eventType("UserSignup")
+                    .aggregateId(authUser.getId())
+                    .payload(payloadJson)
+                    .published(false)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Outbox serialize failed", e);
+        }
 
         // User 프로필 생성 ( 이메일, 비밀번호를 제외한 User 기본 정보 )
         try {
