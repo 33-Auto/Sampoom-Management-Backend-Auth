@@ -22,12 +22,6 @@ public class SwaggerConfig {
                 .bearerFormat("JWT")
                 .name("Authorization");
 
-        SecurityScheme cookieAuth = new SecurityScheme()
-                .type(SecurityScheme.Type.APIKEY)
-                .in(SecurityScheme.In.COOKIE)
-                .name("ACCESS_TOKEN")
-                .description("브라우저에서 자동 주입, 입력 필요 없음");
-
         Server localServer = new Server()
                 .url("http://localhost:8081")
                 .description("로컬 서버");
@@ -38,8 +32,6 @@ public class SwaggerConfig {
 
         SecurityRequirement bearerAuthRequirement = new SecurityRequirement()
                 .addList("bearerAuth");
-        SecurityRequirement cookieAuthRequirement = new SecurityRequirement()
-                .addList("cookieAuth");
 
         return new OpenAPI()
                 .info(new Info()
@@ -48,10 +40,8 @@ public class SwaggerConfig {
                         .version("1.0.0"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", bearerAuth)
-                        .addSecuritySchemes("cookieAuth", cookieAuth)
                 )
                 .addSecurityItem(bearerAuthRequirement)
-                .addSecurityItem(cookieAuthRequirement)
                 .servers(List.of(localServer, prodServer));
     }
 }
