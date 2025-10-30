@@ -14,7 +14,9 @@ import com.sampoom.auth.common.jwt.JwtAuthFilter;
 import com.sampoom.auth.common.jwt.JwtProvider;
 import com.sampoom.auth.api.auth.service.AuthService;
 import io.jsonwebtoken.Claims;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,6 +35,7 @@ import static com.sampoom.auth.api.auth.utils.CookieUtils.clearAuthCookies;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
+@Tag(name="AUTH", description = "AUTH 관련 API 입니다.")
 public class AuthController {
 
     private final AuthService authService;
@@ -45,12 +48,14 @@ public class AuthController {
     @Value("${jwt.refresh-ttl-seconds}")
     private long refreshTtlSeconds;
 
+    @Operation(summary = "회원가입", description = "회원가입을 통해 인증 정보를 담은 유저를 생성합니다.")
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<SignupResponse>> signup(@Valid @RequestBody SignupRequest req) {
         SignupResponse resp = authService.signup(req);
         return ApiResponse.success(SuccessStatus.CREATED, resp);
     }
 
+    @Operation(summary = "로그인", description = "로그인을 통해 토큰을 발급합니다.")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
             @Valid @RequestBody LoginRequest req,
@@ -80,6 +85,7 @@ public class AuthController {
 
 
     @PostMapping("/refresh")
+    @Operation(summary = "토큰 재발급", description = "리프레시 토큰을 통해 토큰을 재발급합니다.")
     public ResponseEntity<ApiResponse<RefreshResponse>> refresh(
             @RequestBody(required = false) RefreshRequest refreshRequest,
             HttpServletRequest request,
@@ -143,6 +149,7 @@ public class AuthController {
 
 
     @PostMapping("/logout")
+    @Operation(summary = "로그아웃", description = "토큰을 초기화해 로그아웃합니다. 서버 측에 로그아웃 여부를 전달해야 할 때 명시적으로 사용합니다.")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse<Void>> logout(
             HttpServletRequest request,

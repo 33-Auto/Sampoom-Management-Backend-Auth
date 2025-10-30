@@ -1,6 +1,6 @@
 package com.sampoom.auth.common.entity;
 
-public enum Organization {
+public enum Workspace {
     FACTORY,
     WAREHOUSE,
     AGENCY
