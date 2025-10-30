@@ -35,8 +35,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String clientType = request.getHeader("X-Client-Type");
-        log.info("[JwtAuthFilter] request path = {}", request.getRequestURI());
-        log.info("[JwtAuthFilter] Authorization = {}", request.getHeader("Authorization"));
+        if (log.isDebugEnabled()) {
+            log.debug("[JwtAuthFilter] Authorization 헤더 존재 여부 = {}", request.getHeader("Authorization") != null);
+        }
 
         // X-Client-Type 헤더가 비어 있으면 APP을 기본값으로 한다.
         if (clientType == null) clientType = "APP";

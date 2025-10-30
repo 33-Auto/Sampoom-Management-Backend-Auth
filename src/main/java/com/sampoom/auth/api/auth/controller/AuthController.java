@@ -14,6 +14,8 @@ import com.sampoom.auth.common.jwt.JwtAuthFilter;
 import com.sampoom.auth.common.jwt.JwtProvider;
 import com.sampoom.auth.api.auth.service.AuthService;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -163,7 +165,17 @@ public class AuthController {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
 
-        Claims claims = jwtProvider.parse(accessToken);
+        Claims claims;
+        try {
+            claims = jwtProvider.parse(accessToken);
+        } catch (ExpiredJwtException e) {
+            claims = e.getClaims();
+            if (claims == null) {
+                throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+            }
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+        }
         Long userId = Long.valueOf(claims.getSubject());
 
         // WEB: 쿠키 삭제

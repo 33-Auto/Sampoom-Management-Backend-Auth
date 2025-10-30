@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * 발행하지 않은 Outbox에 쌓인 이벤트를 주기적으로 일괄 처리
@@ -36,9 +37,16 @@ public class OutboxRelay {
         if (batch.isEmpty()) return;
         // 발견한 미발행 이벤트를 전부 전송
         for (OutboxEvent e : batch) {
-            kafka.send(authEventsTopic, String.valueOf(e.getAggregateId()), e.getPayload());
-            e.setPublished(true);
-        }
+            try {
+                    kafka.send(authEventsTopic, String.valueOf(e.getAggregateId()), e.getPayload()).get();
+                    e.setPublished(true);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Kafka 전송 중 인터럽트 발생", ex);
+                } catch (ExecutionException ex) {
+                    throw new IllegalStateException("Kafka 전송 실패", ex.getCause());
+                }
+            }
         // JPA @Transactional 이므로 여기서 커밋
         log.info("총 {}개의 이벤트가 발행됐습니다.", batch.size());
     }
