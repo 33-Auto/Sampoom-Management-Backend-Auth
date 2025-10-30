@@ -4,11 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sampoom.auth.api.auth.dto.request.SignupRequest;
 import com.sampoom.auth.api.auth.dto.response.SignupResponse;
 import com.sampoom.auth.api.auth.entity.AuthUser;
-import com.sampoom.auth.api.auth.event.UserSignedUpEvent;
-import com.sampoom.auth.api.auth.internal.dto.AuthUserProfile;
+import com.sampoom.auth.api.auth.event.AuthUserSignedUpEvent;
+import com.sampoom.auth.api.auth.internal.dto.SignupUser;
 import com.sampoom.auth.api.auth.outbox.OutboxEvent;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
-import com.sampoom.auth.api.auth.repository.OutboxRepository;
+import com.sampoom.auth.api.auth.outbox.OutboxRepository;
+import com.sampoom.auth.common.entity.Role;
 import com.sampoom.auth.common.exception.BadRequestException;
 import com.sampoom.auth.common.exception.ConflictException;
 import com.sampoom.auth.common.exception.InternalServerErrorException;
@@ -24,16 +25,14 @@ import io.jsonwebtoken.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-
-import static org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT;
 
 @Slf4j
 @Transactional
@@ -55,19 +54,13 @@ public class AuthService {
     private final UserClient userClient;
     private final ObjectMapper objectMapper;
     private final OutboxRepository outboxRepo;
+    private final ApplicationEventPublisher eventPublisher;
 
-
-    @TransactionalEventListener(phase = AFTER_COMMIT)
     public SignupResponse signup(SignupRequest req) {
         // 유저 비활성화 여부 확인
-        Optional<AuthUser> user =  authUserRepository.findByEmail(req.getEmail());
+        Optional<AuthUser> user = authUserRepository.findByEmail(req.getEmail());
         if(user.isPresent()) {
-            // 중복 이메일 확인
-            if (!user.get().isDeleted()) {
                 throw new ConflictException(ErrorStatus.USER_EMAIL_DUPLICATED);
-            }
-            // 비활성화된 유저
-            throw new UnauthorizedException(ErrorStatus.USER_DEACTIVATED);
         }
 
         // AuthUser 생성 ( 이메일, 비밀번호만 담은 User 인증 정보 )
@@ -75,40 +68,39 @@ public class AuthService {
                 AuthUser.builder()
                         .email(req.getEmail())
                         .password(passwordEncoder.encode(req.getPassword()))
-                        .role("ROLE_USER")
+                        .role(req.getRole())
                         .build()
         );
 
         // Outbox 이벤트 생성 (User & Employee가 구독)
-        var evt = UserSignedUpEvent.builder()
-                .eventType("UserSignup")
+        AuthUserSignedUpEvent evt = AuthUserSignedUpEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .eventType("UserSignedUp")
                 .occurredAt(java.time.OffsetDateTime.now().toString())
-                .payload(UserSignedUpEvent.Payload.builder()
+                .payload(AuthUserSignedUpEvent.Payload.builder()
                         .userId(authUser.getId())
                         .email(authUser.getEmail())
                         .role(authUser.getRole())
-                        .userName(req.getUserName())
-                        .workspace(req.getWorkspace())
-                        .branch(req.getBranch())
-                        .position(req.getPosition())
+                        .createdAt(authUser.getCreatedAt())
                         .build())
                 .build();
 
         try {
             String payloadJson = objectMapper.writeValueAsString(evt);
             outboxRepo.save(OutboxEvent.builder()
-                    .eventType("UserSignup")
+                    .eventType(evt.getEventType())
                     .aggregateId(authUser.getId())
                     .payload(payloadJson)
                     .published(false)
                     .build());
+
         } catch (Exception e) {
             throw new RuntimeException("Outbox serialize failed", e);
         }
 
         // User 프로필 생성 ( 이메일, 비밀번호를 제외한 User 기본 정보 )
         try {
-            ApiResponse<Void> response = userClient.createProfile(AuthUserProfile.builder()
+            ApiResponse<Void> response = userClient.createProfile(SignupUser.builder()
                     .userId(authUser.getId())
                     .userName(req.getUserName())
                     .workspace(req.getWorkspace())
@@ -134,33 +126,28 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest req) {
         // user에 담자마자 이메일 존재 여부 체크
-        AuthUser user = authUserRepository.findByEmail(req.getEmail())
+        AuthUser authUser = authUserRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new UnauthorizedException(ErrorStatus.USER_BY_EMAIL_NOT_FOUND));
 
-        // 비활성화 유저
-        if (user.isDeleted()) {
-            throw new UnauthorizedException(ErrorStatus.USER_DEACTIVATED);
-        }
-
         // 비밀번호 불일치
-        if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(req.getPassword(), authUser.getPassword())) {
             throw new UnauthorizedException(ErrorStatus.USER_PASSWORD_INVALID);
         }
 
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
-        refreshTokenService.deleteAllByUser(user.getId());
+        refreshTokenService.deleteAllByUser(authUser.getId());
 
         // 토큰 발급
         String jti = UUID.randomUUID().toString();
-        String access = jwtProvider.createAccessToken(user.getId(), user.getRole(), jti);
-        String refresh = jwtProvider.createRefreshToken(user.getId(), user.getRole(), jti);
+        String access = jwtProvider.createAccessToken(authUser.getId(), authUser.getRole(), jti);
+        String refresh = jwtProvider.createRefreshToken(authUser.getId(), authUser.getRole(), jti);
 
         // 리프레시 토큰 저장
-        refreshTokenService.save(user.getId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
+        refreshTokenService.save(authUser.getId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
 
         return LoginResponse.builder()
-                .userId(user.getId())
-                .role(user.getRole())
+                .userId(authUser.getId())
+                .role(authUser.getRole())
                 .accessToken(access)
                 .refreshToken(refresh)
                 .expiresIn(accessTokenExpiration)
@@ -216,7 +203,7 @@ public class AuthService {
         refreshTokenService.deleteAllByUser(userId);
 
         // 토큰에서 바로 정보 꺼내기 (DB 조회)
-        String role = refreshClaims.get("role", String.class);
+        Role role = refreshClaims.get("role", Role.class);
 
         // 새로운 Access/Refresh 토큰 생성
         String newJti = UUID.randomUUID().toString();

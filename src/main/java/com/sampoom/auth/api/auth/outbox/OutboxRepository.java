@@ -1,6 +1,5 @@
-package com.sampoom.auth.api.auth.repository;
+package com.sampoom.auth.api.auth.outbox;
 
-import com.sampoom.auth.api.auth.outbox.OutboxEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

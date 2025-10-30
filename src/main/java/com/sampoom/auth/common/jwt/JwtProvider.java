@@ -1,5 +1,6 @@
 package com.sampoom.auth.common.jwt;
 
+import com.sampoom.auth.common.entity.Role;
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -31,7 +32,7 @@ public class JwtProvider {
         return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
     }
 
-    public String createAccessToken(Long userId, String role, String jti) {
+    public String createAccessToken(Long userId, Role role, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)
@@ -45,7 +46,7 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String createRefreshToken(Long userId, String role, String jti) {
+    public String createRefreshToken(Long userId, Role role, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)

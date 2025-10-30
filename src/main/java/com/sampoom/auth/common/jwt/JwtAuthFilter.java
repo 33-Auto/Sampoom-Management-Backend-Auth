@@ -1,5 +1,6 @@
 package com.sampoom.auth.common.jwt;
 
+import com.sampoom.auth.common.entity.Role;
 import com.sampoom.auth.common.exception.UnauthorizedException;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.service.BlacklistTokenService;
@@ -50,6 +51,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (accessToken != null && !accessToken.isBlank()) {
             try {
                 Claims claims = jwtProvider.parse(accessToken);
+
                 // 토큰 타입 검증
                 String type = claims.get("type", String.class);
                 if ("refresh".equals(type)) {
@@ -65,22 +67,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
                 }
 
+                // 토큰에서 userId, role 가져오기
                 String userId = claims.getSubject();
-                String role = claims.get("role", String.class);
-                if (userId == null || userId.isBlank() || role == null || role.isBlank()) {
+                Role role = claims.get("role", Role.class);
+                if (userId == null || userId.isBlank() || role == null ) {
                     log.warn("토큰 필드 누락: userId={}, role={}", userId, role);
                     SecurityContextHolder.clearContext();
                     filterChain.doFilter(request, response);
                     return;
                 }
 
-                String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-                var authentication = new UsernamePasswordAuthenticationToken(
+                // 권한 매핑 (Enum Role → Security 권한명)
+                String authority;
+                switch (role) {
+                    case MEMBER -> authority = "ROLE_USER";
+                    case ADMIN -> authority = "ROLE_ADMIN";
+                    default -> authority = "ROLE_" + role.name();
+                }
+
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userId, null, List.of(() -> authority)
                 );
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
+                // 토큰 검증 실패 시 SecurityContext 비움
                 SecurityContextHolder.clearContext();
                 throw e;
             }

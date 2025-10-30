@@ -1,5 +1,8 @@
 package com.sampoom.auth.api.auth.dto.request;
 
+import com.sampoom.auth.common.entity.Organization;
+import com.sampoom.auth.common.entity.Position;
+import com.sampoom.auth.common.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -19,12 +22,14 @@ public class SignupRequest {
     @Size(min = 8, max = 64)
     private String password;
 
+    private Role role;
+
     // User(Profile)
     @NotBlank
     private String userName;
 
     // Employee
-    private String workspace;
+    private Organization workspace;
     private String branch;
-    private String position;
+    private Position position;
 }
