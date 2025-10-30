@@ -35,6 +35,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String clientType = request.getHeader("X-Client-Type");
+        log.info("[JwtAuthFilter] request path = {}", request.getRequestURI());
+        log.info("[JwtAuthFilter] Authorization = {}", request.getHeader("Authorization"));
 
         // X-Client-Type 헤더가 비어 있으면 APP을 기본값으로 한다.
         if (clientType == null) clientType = "APP";
@@ -69,7 +71,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 // 토큰에서 userId, role 가져오기
                 String userId = claims.getSubject();
-                Role role = claims.get("role", Role.class);
+                String roleStr = claims.get("role", String.class);
+                Role role = Role.valueOf(roleStr);
                 if (userId == null || userId.isBlank() || role == null ) {
                     log.warn("토큰 필드 누락: userId={}, role={}", userId, role);
                     SecurityContextHolder.clearContext();

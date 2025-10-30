@@ -71,7 +71,6 @@ public class AuthController {
             // WEB: body에 토큰 제외
             LoginResponse webResp = LoginResponse.builder()
                     .userId(resp.getUserId())
-                    .userName(resp.getUserName())
                     .role(resp.getRole())
                     .expiresIn(resp.getExpiresIn())
                     .build();
@@ -131,7 +130,10 @@ public class AuthController {
         }
         // APP: 헤더에서
         else if ("APP".equalsIgnoreCase(clientType)) {
-            accessToken = jwtAuthFilter.resolveAccessToken(request, clientType);
+                String header = request.getHeader("Authorization");
+                if (header != null && header.startsWith("Bearer ")) {
+                    accessToken= header.substring(7);
+                }
         }
 
         // 토큰 유효성 검증
@@ -157,16 +159,17 @@ public class AuthController {
             @RequestHeader(value = "X-Client-Type", defaultValue = "APP") String clientType
     ) {
         String accessToken = jwtAuthFilter.resolveAccessToken(request, clientType);
-        Claims claims = jwtProvider.parse(accessToken);
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+        }
 
+        Claims claims = jwtProvider.parse(accessToken);
         Long userId = Long.valueOf(claims.getSubject());
 
         // WEB: 쿠키 삭제
         if ("WEB".equalsIgnoreCase(clientType)) {
             clearAuthCookies(response);
         }
-
-
         authService.logout(userId, accessToken);
         return ApiResponse.success_only(SuccessStatus.OK);
     }

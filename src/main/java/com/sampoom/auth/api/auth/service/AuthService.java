@@ -203,7 +203,8 @@ public class AuthService {
         refreshTokenService.deleteAllByUser(userId);
 
         // 토큰에서 바로 정보 꺼내기 (DB 조회)
-        Role role = refreshClaims.get("role", Role.class);
+        String roleStr = refreshClaims.get("role", String.class);
+        Role role = Role.valueOf(roleStr);
 
         // 새로운 Access/Refresh 토큰 생성
         String newJti = UUID.randomUUID().toString();

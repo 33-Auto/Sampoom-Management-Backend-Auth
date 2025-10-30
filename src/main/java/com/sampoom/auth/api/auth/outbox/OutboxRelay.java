@@ -26,7 +26,7 @@ public class OutboxRelay {
     @Value("${app.topics.auth-events:auth-events}")
     private String authEventsTopic;
 
-    @Scheduled(fixedDelayString = "${app.outbox.relay-interval-ms:2000}")
+    @Scheduled(fixedDelayString = "${app.outbox.relay-interval-ms:10000}")
     @Transactional
     public void publishPendingEvents() {
         log.info("주기적으로 Outbox를 감시중입니다.");
