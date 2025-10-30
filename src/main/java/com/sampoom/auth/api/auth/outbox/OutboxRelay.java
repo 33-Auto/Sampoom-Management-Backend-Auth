@@ -42,9 +42,10 @@ public class OutboxRelay {
                     e.setPublished(true);
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Kafka 전송 중 인터럽트 발생", ex);
+                    log.error("이벤트 ID {} 전송 중 인터럽트 발생, 다음 배치에서 재시도", e.getId(), ex);
+                    break; // 나머지 이벤트는 다음 스케줄링에서 재시도
                 } catch (ExecutionException ex) {
-                    throw new IllegalStateException("Kafka 전송 실패", ex.getCause());
+                    log.error("이벤트 ID {} 전송 실패, 다음 배치에서 재시도", e.getId(), ex.getCause());
                 }
             }
         // JPA @Transactional 이므로 여기서 커밋
