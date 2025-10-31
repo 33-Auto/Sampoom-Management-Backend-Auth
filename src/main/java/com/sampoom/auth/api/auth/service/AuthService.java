@@ -44,7 +44,7 @@ public class AuthService {
     private int accessTokenExpiration;
     @Value("${jwt.refresh-ttl-seconds}")
     private int refreshTokenExpiration;
-    @Value("${user.service.url:defaultValue")
+    @Value("${user.service.url:defaultValue}")
     private String userServiceUrl;
     // 인증 관련
     private final JwtProvider jwtProvider;
