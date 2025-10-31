@@ -160,7 +160,7 @@ public class AuthService {
     }
 
 
-    public RefreshResponse refresh(String refreshToken, String accessToken) {
+    public RefreshResponse refresh(String refreshToken) {
         // 리프레시 토큰 검증
         Claims refreshClaims;
         try {
@@ -184,29 +184,8 @@ public class AuthService {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
 
-        // 엑세스 토큰 처리
-        Claims accessClaims;
-        String normalizedAccessToken=stripBearer(accessToken);
-        if (normalizedAccessToken == null || normalizedAccessToken.isBlank()) {
-            throw new BadRequestException(ErrorStatus.TOKEN_NULL_BLANK);
-        }
-        // 기존 AccessToken 블랙리스트 등록 (만료돼도 등록 가능)
-        try {
-            accessClaims = jwtProvider.parse(normalizedAccessToken);
-            blacklistTokenService.add(normalizedAccessToken, accessClaims);
-        } catch (ExpiredJwtException e) {
-            accessClaims = e.getClaims();
-            if (accessClaims != null) {
-                blacklistTokenService.add(normalizedAccessToken, accessClaims);
-            }
-        } catch (JwtException | IllegalArgumentException e) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
-        }
-
-        // 교차 검증: refresh와 access가 동일 사용자/세션(jti)인지 확인
-        if (!userId.equals(Long.valueOf(accessClaims.getSubject())) || !jti.equals(accessClaims.getId())) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
-        }
+        // 동일한 jti로
+        blacklistTokenService.add(userId, jti, refreshClaims.getExpiration().toInstant());
 
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
         refreshTokenService.deleteAllByUser(userId);
@@ -245,7 +224,7 @@ public class AuthService {
         }
 
         refreshTokenService.deleteAllByUser(userId);
-        blacklistTokenService.add(accessToken, claims);
+        blacklistTokenService.addLogout(accessToken, claims);
 
         log.info("[Logout] userId={} / jti={} / exp={}", userId, claims.getId(), claims.getExpiration());
     }
