@@ -42,9 +42,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         // X-Client-Type 헤더가 비어 있으면 APP을 기본값으로 한다.
         if (clientType == null) clientType = "APP";
 
-        // refresh 요청이면 필터를 아예 통과시킨다
         String path = request.getRequestURI();
-        if (path.startsWith("/refresh") || path.startsWith("/login")) {
+        if (path.startsWith("/refresh") || path.startsWith("/login") || path.startsWith("/signup")  ||
+            path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.equals("/swagger-ui.html")) {
             filterChain.doFilter(request, response);
             return;
         }
