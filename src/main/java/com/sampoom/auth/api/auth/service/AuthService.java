@@ -109,9 +109,11 @@ public class AuthService {
                     .build());
 
             if (response == null || !response.getSuccess()) {
+                log.error("[Signup] Feign call response null/failed");
                 throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
             }
         } catch (Exception e) {
+            log.error("[Signup] Feign call failed", e);
             // AuthUser 롤백 보장
             throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
         }
@@ -165,6 +167,10 @@ public class AuthService {
             throw new UnauthorizedException(ErrorStatus.TOKEN_EXPIRED);
         } catch (JwtException | IllegalArgumentException e) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+        }
+        String tokenType = refreshClaims.get("type", String.class);
+        if (!"refresh".equals(tokenType)) {
+            throw new UnauthorizedException(ErrorStatus.TOKEN_TYPE_INVALID);
         }
 
         Long userId = Long.valueOf(refreshClaims.getSubject());
