@@ -44,6 +44,8 @@ public class AuthService {
     private int accessTokenExpiration;
     @Value("${jwt.refresh-ttl-seconds}")
     private int refreshTokenExpiration;
+    @Value("${user.service.url}")
+    private String userServiceUrl;
     // 인증 관련
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
@@ -100,6 +102,7 @@ public class AuthService {
 
         // User 프로필 생성 ( 이메일, 비밀번호를 제외한 User 기본 정보 )
         try {
+            log.info("[Feign call] user.service.url = {}", userServiceUrl);
             ApiResponse<Void> response = userClient.createProfile(SignupUser.builder()
                     .userId(authUser.getId())
                     .userName(req.getUserName())
