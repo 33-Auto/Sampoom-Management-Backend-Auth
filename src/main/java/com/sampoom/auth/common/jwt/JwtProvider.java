@@ -75,6 +75,7 @@ public class JwtProvider {
 
         return Jwts.builder()
                 .setIssuer("auth-service")
+                .setSubject("auth-service")
                 .setClaims(claims)
                 .setIssuedAt(new Date())
                 .setExpiration(Date.from(Instant.now().plus(Duration.ofMinutes(5))))
