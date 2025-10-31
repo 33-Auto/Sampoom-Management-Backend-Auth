@@ -45,8 +45,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         if (path.startsWith("/refresh") || path.startsWith("/login") || path.startsWith("/signup")  ||
             path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.equals("/swagger-ui.html")) {
+            log.info("[Signup] path.startsWith 통과");
             filterChain.doFilter(request, response);
-            log.info("[Signup] paht.startsWith 통과");
             return;
         }
         // accessToken 추출

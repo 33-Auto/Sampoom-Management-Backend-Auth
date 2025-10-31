@@ -168,6 +168,10 @@ public class AuthService {
         } catch (JwtException | IllegalArgumentException e) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
+        String tokenType = refreshClaims.get("type", String.class);
+        if (!"refresh".equals(tokenType)) {
+            throw new UnauthorizedException(ErrorStatus.TOKEN_TYPE_INVALID);
+        }
 
         Long userId = Long.valueOf(refreshClaims.getSubject());
         String jti = refreshClaims.getId();
