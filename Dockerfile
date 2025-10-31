@@ -3,8 +3,8 @@ FROM --platform=linux/arm64 gradle:7.6.1-jdk17
 
 WORKDIR /app
 
-COPY src/main/resources/ src/main/resources/
-COPY build/libs/*.jar app.jar
+ARG JAR_FILE=build/libs/*.jar
+COPY ${JAR_FILE} app.jar
 
 ENV SPRING_PROFILES_ACTIVE=prod \
     SERVER_PORT=8080 \
