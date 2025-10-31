@@ -57,14 +57,14 @@ public class SecurityConfig {
 //                    corsConfig.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Client-Type"));
 //                    return corsConfig;
 //                }))
-//                .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
-//                .exceptionHandling(ex -> ex
-//                        // 인증 실패(UnauthorizedException 포함) 시 401 반환
-//                        .authenticationEntryPoint((request, response, authException) -> {
-//                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-//                            response.setContentType("application/json;charset=UTF-8");
-//                        })
-//                );
+                .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        // 인증 실패(UnauthorizedException 포함) 시 401 반환
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json;charset=UTF-8");
+                        })
+                );
         return http.build();
     }
 
