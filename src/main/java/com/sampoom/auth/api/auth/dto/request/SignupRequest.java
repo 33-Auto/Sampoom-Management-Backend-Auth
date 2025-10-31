@@ -22,8 +22,6 @@ public class SignupRequest {
     @Size(min = 8, max = 64)
     private String password;
 
-    private Role role;
-
     // User(Profile)
     @NotBlank
     private String userName;
