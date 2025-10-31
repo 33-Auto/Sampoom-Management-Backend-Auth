@@ -109,9 +109,11 @@ public class AuthService {
                     .build());
 
             if (response == null || !response.getSuccess()) {
+                log.error("[Signup] Feign call response null/failed");
                 throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
             }
         } catch (Exception e) {
+            log.error("[Signup] Feign call failed", e);
             // AuthUser 롤백 보장
             throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
         }
