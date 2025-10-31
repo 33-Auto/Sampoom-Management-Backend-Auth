@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(
         name = "user-service",
-        url = "${user.service.url}",
+        url = "${user.service.url:http://user-service:8080}",
         fallback = UserClientFallback.class,
         configuration = InternalFeignConfig.class
 )
