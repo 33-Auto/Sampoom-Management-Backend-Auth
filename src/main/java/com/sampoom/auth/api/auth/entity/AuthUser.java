@@ -5,7 +5,7 @@ import com.sampoom.auth.common.entity.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
-import static com.sampoom.auth.common.entity.Role.ROLE;
+import static com.sampoom.auth.common.entity.Role.USER;
 
 @Entity
 @Table(name = "auth_user")
@@ -28,10 +28,10 @@ public class AuthUser extends BaseTimeEntity {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role = ROLE;
+    private Role role = USER;
 
     @PrePersist
     public void prePersist() {
-        if (this.role == null) this.role = ROLE;
+        if (this.role == null) this.role = USER;
     }
 }
