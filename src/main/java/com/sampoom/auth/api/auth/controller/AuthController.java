@@ -121,7 +121,12 @@ public class AuthController {
         RefreshResponse resp = authService.refresh(refreshToken);
 
         if ("WEB".equalsIgnoreCase(clientType)) {
+            // 쿠키 세팅 유틸
             addAuthCookies(response,resp.getAccessToken(),resp.getRefreshToken(), accessTtlSeconds, refreshTtlSeconds);
+            // WEB: body에 토큰 제외
+            RefreshResponse webResp = RefreshResponse.builder()
+                    .expiresIn(resp.getExpiresIn())
+                    .build();
         }
         return ApiResponse.success(SuccessStatus.OK,resp);
     }
@@ -154,6 +159,7 @@ public class AuthController {
 
         // WEB: 쿠키 삭제
         if ("WEB".equalsIgnoreCase(clientType)) {
+            // 쿠키 초기화 유틸
             clearAuthCookies(response);
         }
         authService.logout(userId, accessToken);

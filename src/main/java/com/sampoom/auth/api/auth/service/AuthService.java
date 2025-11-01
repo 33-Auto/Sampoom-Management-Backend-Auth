@@ -226,13 +226,4 @@ public class AuthService {
 
         log.info("[Logout] userId={} / jti={} / exp={}", userId, claims.getId(), claims.getExpiration());
     }
-
-
-    private String stripBearer(String token) {
-        if (token == null) return null;
-        if (token.regionMatches(true, 0, "Bearer ", 0, 7)) {
-            return token.substring(7);
-        }
-        return token;
-    }
 }
