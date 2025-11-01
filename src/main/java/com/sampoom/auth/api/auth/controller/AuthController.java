@@ -115,35 +115,12 @@ public class AuthController {
             }
         }
 
-    // 엑세스 토큰 추출
-        String accessToken = null;
-        // WEB: 쿠키에서
-        if ("WEB".equalsIgnoreCase(clientType)) {
-            if (request.getCookies() != null) {
-                // 두 쿠키 중에
-                for (Cookie cookie : request.getCookies()) {
-                    // 엑세스 토큰 쿠키인 것 추출
-                    if ("ACCESS_TOKEN".equals(cookie.getName())) {
-                        accessToken = cookie.getValue();
-                        break;
-                    }
-                }
-            }
-        }
-        // APP: 헤더에서
-        else if ("APP".equalsIgnoreCase(clientType)) {
-                String header = request.getHeader("Authorization");
-                if (header != null && header.startsWith("Bearer ")) {
-                    accessToken= header.substring(7);
-                }
-        }
-
         // 토큰 유효성 검증
-        if (refreshToken == null || refreshToken.isBlank() || accessToken == null || accessToken.isBlank()) {
+        if (refreshToken == null || refreshToken.isBlank()) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
 
-        RefreshResponse resp = authService.refresh(refreshToken, accessToken);
+        RefreshResponse resp = authService.refresh(refreshToken);
 
         if ("WEB".equalsIgnoreCase(clientType)) {
             addAuthCookies(response,resp.getAccessToken(),resp.getRefreshToken(), accessTtlSeconds, refreshTtlSeconds);

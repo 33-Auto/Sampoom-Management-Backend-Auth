@@ -27,12 +27,31 @@ public class BlacklistTokenService {
 
     private final BlacklistTokenRepository blacklistRepository;
 
-    public void add(String accessToken, Claims claims) {
+    public void add(Long userId, String jti, Instant expiresAt) {
+        if (jti == null || jti.isBlank()) {
+            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+        }
+        if (userId == null || expiresAt == null) {
+            throw new BadRequestException(ErrorStatus.EXPIRATION_NULL);
+        }
+
+        if (!blacklistRepository.existsByTokenId(jti)) {
+            blacklistRepository.save(
+                    BlacklistToken.builder()
+                            .userId(userId)
+                            .tokenId(jti)
+                            .tokenHash(hashString(jti)) // 해싱해서 저장
+                            .expiresAt(expiresAt)
+                            .build()
+            );
+        }
+    }
+    public void addLogout(String accessToken, Claims claims) {
         String jti = claims.getId();
         if (jti == null || jti.isBlank()) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
-        String hash = hashToken(accessToken);
+        String hash = hashString(accessToken);
         Long userId;
         try {
             userId = Long.valueOf(claims.getSubject());
@@ -50,7 +69,7 @@ public class BlacklistTokenService {
                     BlacklistToken.builder()
                             .userId(userId)
                             .tokenId(jti)
-                            .tokenHash(hash)
+                            .tokenHash(hash)    // 해싱해서 저장
                             .expiresAt(expiresAt)
                             .build()
             );
@@ -73,7 +92,7 @@ public class BlacklistTokenService {
         }
     }
 
-    private String hashToken(String token) {
+    private String hashString(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return Base64.getEncoder().encodeToString(digest.digest(token.getBytes(StandardCharsets.UTF_8)));
