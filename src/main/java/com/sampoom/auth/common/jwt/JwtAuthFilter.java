@@ -1,6 +1,7 @@
 package com.sampoom.auth.common.jwt;
 
 import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.exception.BadRequestException;
 import com.sampoom.auth.common.exception.UnauthorizedException;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.service.BlacklistTokenService;
@@ -88,7 +89,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 // 권한 매핑 (Enum Role → Security 권한명)
                 String authority;
                 switch (role) {
-                    case MEMBER -> authority = "ROLE_USER";
+                    case ROLE -> authority = "ROLE_USER";
                     case ADMIN -> authority = "ROLE_ADMIN";
                     default -> authority = "ROLE_" + role.name();
                 }
@@ -122,6 +123,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             for (Cookie cookie : request.getCookies()) {
                 if ("ACCESS_TOKEN".equals(cookie.getName())) {
                     return cookie.getValue();
+                } else {
+                    throw new BadRequestException(ErrorStatus.TOKEN_INVALID);
                 }
             }
         }

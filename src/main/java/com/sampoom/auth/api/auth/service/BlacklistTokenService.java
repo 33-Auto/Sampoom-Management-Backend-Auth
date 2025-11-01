@@ -27,7 +27,7 @@ public class BlacklistTokenService {
 
     private final BlacklistTokenRepository blacklistRepository;
 
-    public void add(Long userId, String jti, Instant expiresAt) {
+    public void addJti(Long userId, String jti, Instant expiresAt) {
         if (jti == null || jti.isBlank()) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
@@ -40,19 +40,20 @@ public class BlacklistTokenService {
                     BlacklistToken.builder()
                             .userId(userId)
                             .tokenId(jti)
-                            .tokenHash(hashString(jti)) // 해싱해서 저장
+                            .tokenHash(hashString(jti)) // JTI해싱해서 저장
                             .expiresAt(expiresAt)
                             .build()
             );
         }
     }
-    public void addLogout(String accessToken, Claims claims) {
+    public void add(String accessToken, Claims claims) {
         String jti = claims.getId();
         if (jti == null || jti.isBlank()) {
             throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
         }
         String hash = hashString(accessToken);
         Long userId;
+
         try {
             userId = Long.valueOf(claims.getSubject());
         } catch (NumberFormatException e) {
