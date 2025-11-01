@@ -10,7 +10,6 @@ import com.sampoom.auth.api.auth.outbox.OutboxEvent;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
 import com.sampoom.auth.api.auth.outbox.OutboxRepository;
 import com.sampoom.auth.common.entity.Role;
-import com.sampoom.auth.common.exception.BadRequestException;
 import com.sampoom.auth.common.exception.ConflictException;
 import com.sampoom.auth.common.exception.InternalServerErrorException;
 import com.sampoom.auth.common.exception.UnauthorizedException;
@@ -70,7 +69,7 @@ public class AuthService {
                 AuthUser.builder()
                         .email(req.getEmail())
                         .password(passwordEncoder.encode(req.getPassword()))
-                        .role(Role.MEMBER)
+                        .role(Role.ROLE)
                         .build()
         );
 
@@ -185,7 +184,7 @@ public class AuthService {
         }
 
         // 동일한 jti로
-        blacklistTokenService.add(userId, jti, refreshClaims.getExpiration().toInstant());
+        blacklistTokenService.addJti(userId, jti, refreshClaims.getExpiration().toInstant());
 
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
         refreshTokenService.deleteAllByUser(userId);
@@ -224,7 +223,7 @@ public class AuthService {
         }
 
         refreshTokenService.deleteAllByUser(userId);
-        blacklistTokenService.addLogout(accessToken, claims);
+        blacklistTokenService.add(accessToken, claims);
 
         log.info("[Logout] userId={} / jti={} / exp={}", userId, claims.getId(), claims.getExpiration());
     }

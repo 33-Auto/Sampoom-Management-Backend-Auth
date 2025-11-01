@@ -26,8 +26,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -128,7 +126,6 @@ public class AuthController {
         return ApiResponse.success(SuccessStatus.OK,resp);
     }
 
-
     @PostMapping("/logout")
     @Operation(summary = "로그아웃", description = "토큰을 초기화해 로그아웃합니다. 서버 측에 로그아웃 여부를 전달해야 할 때 명시적으로 사용합니다.")
     @SecurityRequirement(name = "bearerAuth")
@@ -139,7 +136,7 @@ public class AuthController {
     ) {
         String accessToken = jwtAuthFilter.resolveAccessToken(request, clientType);
         if (accessToken == null || accessToken.isBlank()) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+            throw new UnauthorizedException(ErrorStatus.TOKEN_NULL_BLANK);
         }
 
         Claims claims;
