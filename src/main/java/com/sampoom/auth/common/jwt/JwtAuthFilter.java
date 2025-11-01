@@ -89,7 +89,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 // 권한 매핑 (Enum Role → Security 권한명)
                 String authority;
                 switch (role) {
-                    case ROLE -> authority = "ROLE_USER";
+                    case USER -> authority = "ROLE_USER";
                     case ADMIN -> authority = "ROLE_ADMIN";
                     default -> authority = "ROLE_" + role.name();
                 }

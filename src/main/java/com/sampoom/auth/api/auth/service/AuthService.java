@@ -69,7 +69,6 @@ public class AuthService {
                 AuthUser.builder()
                         .email(req.getEmail())
                         .password(passwordEncoder.encode(req.getPassword()))
-                        .role(Role.ROLE)
                         .build()
         );
 
