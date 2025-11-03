@@ -126,6 +126,7 @@ public class AuthController {
             RefreshResponse webResp = RefreshResponse.builder()
                     .expiresIn(resp.getExpiresIn())
                     .build();
+            return ApiResponse.success(SuccessStatus.OK, webResp);
         }
         return ApiResponse.success(SuccessStatus.OK,resp);
     }

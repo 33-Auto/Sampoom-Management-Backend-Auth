@@ -148,6 +148,9 @@ public class AuthService {
                 log.error("[Login] Feign call failed", e);
                 throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
             }
+            if(response == null) {
+                throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
+            }
 
             if(!response.isValid()) {
                 throw new NotFoundException(ErrorStatus.USER_BY_WORKSPACE_NOT_FOUND);
