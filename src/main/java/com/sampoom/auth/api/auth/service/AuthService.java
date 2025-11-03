@@ -16,7 +16,6 @@ import com.sampoom.auth.common.exception.ConflictException;
 import com.sampoom.auth.common.exception.InternalServerErrorException;
 import com.sampoom.auth.common.exception.NotFoundException;
 import com.sampoom.auth.common.exception.UnauthorizedException;
-import com.sampoom.auth.common.response.ApiResponse;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.dto.request.LoginRequest;
 import com.sampoom.auth.api.auth.internal.client.UserClient;
@@ -43,9 +42,9 @@ import java.util.UUID;
 public class AuthService {
 
     @Value("${jwt.access-ttl-seconds}")
-    private int accessTokenExpiration;
+    private Long accessTokenExpiration;
     @Value("${jwt.refresh-ttl-seconds}")
-    private int refreshTokenExpiration;
+    private Long refreshTokenExpiration;
     @Value("${user.service.url:defaultValue}")
     private String userServiceUrl;
     // 인증 관련

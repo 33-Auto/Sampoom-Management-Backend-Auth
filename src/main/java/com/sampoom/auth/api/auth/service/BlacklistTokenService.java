@@ -87,9 +87,9 @@ public class BlacklistTokenService {
     @Scheduled(cron = "0 0 * * * *") // 매시간 실행
     @Transactional
     public void cleanupExpiredTokens() {
-        int deleted = blacklistRepository.deleteAllByExpiresAtBefore(Instant.now());
-        if (deleted > 0) {
-            log.info("블랙리스트 : {}", deleted);
+        int deletedTokens = blacklistRepository.deleteAllByExpiresAtBefore(Instant.now());
+        if (deletedTokens > 0) {
+            log.info("블랙리스트 : {}", deletedTokens);
         }
     }
 
