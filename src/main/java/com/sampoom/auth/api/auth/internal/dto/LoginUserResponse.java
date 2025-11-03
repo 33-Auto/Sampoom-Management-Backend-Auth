@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@NotNull
 public class LoginUserResponse {
     private Long userId;       // Auth에서 생성한 userId
     private Workspace workspace;  // 근무지(대리점, 창고, 공장 등)

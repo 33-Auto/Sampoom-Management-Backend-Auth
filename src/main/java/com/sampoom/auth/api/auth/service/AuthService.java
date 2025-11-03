@@ -135,24 +135,23 @@ public class AuthService {
             throw new UnauthorizedException(ErrorStatus.USER_PASSWORD_INVALID);
         }
 
+        LoginUserResponse response;
         try {
             log.info("[Feign call] user.service.url = {}", userServiceUrl);
-            LoginUserResponse response = userClient.verifyWorkspace(
+            response = userClient.verifyWorkspace(
                     LoginUserRequest.builder()
                             .userId(authUser.getId())
                             .workspace(req.getWorkspace())
                             .build()
-            );
-
-            if(!response.isValid()){
-                throw new NotFoundException(ErrorStatus.USER_BY_WORKSPACE_NOT_FOUND);
+                    );
+            } catch (Exception e) {
+                log.error("[Login] Feign call failed", e);
+                throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
             }
 
-        } catch (Exception e) {
-            log.error("[Login] Feign call failed", e);
-            // AuthUser 롤백 보장
-            throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
-        }
+            if(!response.isValid()) {
+                throw new NotFoundException(ErrorStatus.USER_BY_WORKSPACE_NOT_FOUND);
+            }
 
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
         refreshTokenService.deleteAllByUser(authUser.getId());
