@@ -71,7 +71,6 @@ public class AuthController {
             // WEB: body에 토큰 제외
             LoginResponse webResp = LoginResponse.builder()
                     .userId(resp.getUserId())
-                    .role(resp.getRole())
                     .expiresIn(resp.getExpiresIn())
                     .build();
 

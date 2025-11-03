@@ -150,7 +150,6 @@ public class AuthService {
 
         return LoginResponse.builder()
                 .userId(authUser.getId())
-                .role(authUser.getRole())
                 .accessToken(access)
                 .refreshToken(refresh)
                 .expiresIn(accessTokenExpiration)

@@ -9,7 +9,6 @@ import lombok.*;
 @Builder
 public class LoginResponse {
     private Long userId;
-    private Role role;
     private String accessToken;
     private String refreshToken;
     private long expiresIn;
