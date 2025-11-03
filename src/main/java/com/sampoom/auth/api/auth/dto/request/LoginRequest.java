@@ -19,6 +19,5 @@ public class LoginRequest {
     @NotBlank
     private String password;
     @NotNull
-    @NotBlank
     private Workspace workspace;
 }
