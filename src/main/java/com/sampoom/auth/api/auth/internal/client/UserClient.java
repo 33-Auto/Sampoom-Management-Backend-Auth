@@ -1,9 +1,12 @@
 package com.sampoom.auth.api.auth.internal.client;
 
 import com.sampoom.auth.api.auth.internal.config.InternalFeignConfig;
+import com.sampoom.auth.api.auth.internal.dto.LoginUserRequest;
+import com.sampoom.auth.api.auth.internal.dto.LoginUserResponse;
 import com.sampoom.auth.api.auth.internal.dto.SignupUser;
 import com.sampoom.auth.common.response.ApiResponse;
 import com.sampoom.auth.api.auth.internal.fallback.UserClientFallback;
+import jakarta.validation.Valid;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,5 +19,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 )
 public interface UserClient {
     @PostMapping("/internal/profile")
-    ApiResponse<Void> createProfile(@RequestBody SignupUser req);
+    void createProfile(@Valid @RequestBody SignupUser req);
+
+    @PostMapping("/internal/verify")
+    LoginUserResponse verifyWorkspace(@Valid @RequestBody LoginUserRequest req);
 }
