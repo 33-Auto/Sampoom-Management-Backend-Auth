@@ -27,10 +27,9 @@ public class OutboxRelay {
     @Value("${app.topics.auth-events:auth-events}")
     private String authEventsTopic;
 
-    @Scheduled(fixedDelayString = "${app.outbox.relay-interval-ms:10000}")
+    @Scheduled(fixedDelayString = "${app.outbox.relay-interval-ms:1000}")
     @Transactional
     public void publishPendingEvents() {
-        log.info("주기적으로 Outbox를 감시중입니다.");
         // 최대 200개의 미발행된 이벤트 일괄 처리
         List<OutboxEvent> batch = repo.findTop200ByPublishedFalseOrderByCreatedAtAsc();
         log.info("총 {}개의 미발행된 이벤트를 발견했습니다.", batch.size());

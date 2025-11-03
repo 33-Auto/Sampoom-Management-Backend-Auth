@@ -5,6 +5,8 @@ import com.sampoom.auth.api.auth.dto.request.SignupRequest;
 import com.sampoom.auth.api.auth.dto.response.SignupResponse;
 import com.sampoom.auth.api.auth.entity.AuthUser;
 import com.sampoom.auth.api.auth.event.AuthUserSignedUpEvent;
+import com.sampoom.auth.api.auth.internal.dto.LoginUserRequest;
+import com.sampoom.auth.api.auth.internal.dto.LoginUserResponse;
 import com.sampoom.auth.api.auth.internal.dto.SignupUser;
 import com.sampoom.auth.api.auth.outbox.OutboxEvent;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
@@ -12,6 +14,7 @@ import com.sampoom.auth.api.auth.outbox.OutboxRepository;
 import com.sampoom.auth.common.entity.Role;
 import com.sampoom.auth.common.exception.ConflictException;
 import com.sampoom.auth.common.exception.InternalServerErrorException;
+import com.sampoom.auth.common.exception.NotFoundException;
 import com.sampoom.auth.common.exception.UnauthorizedException;
 import com.sampoom.auth.common.response.ApiResponse;
 import com.sampoom.auth.common.response.ErrorStatus;
@@ -101,18 +104,13 @@ public class AuthService {
         // User 프로필 생성 ( 이메일, 비밀번호를 제외한 User 기본 정보 )
         try {
             log.info("[Feign call] user.service.url = {}", userServiceUrl);
-            ApiResponse<Void> response = userClient.createProfile(SignupUser.builder()
+            userClient.createProfile(SignupUser.builder()
                     .userId(authUser.getId())
                     .userName(req.getUserName())
                     .workspace(req.getWorkspace())
                     .branch(req.getBranch())
                     .position(req.getPosition())
                     .build());
-
-            if (response == null || !response.getSuccess()) {
-                log.error("[Signup] Feign call response null/failed");
-                throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
-            }
         } catch (Exception e) {
             log.error("[Signup] Feign call failed", e);
             // AuthUser 롤백 보장
@@ -137,6 +135,27 @@ public class AuthService {
             throw new UnauthorizedException(ErrorStatus.USER_PASSWORD_INVALID);
         }
 
+        LoginUserResponse response;
+        try {
+            log.info("[Feign call] user.service.url = {}", userServiceUrl);
+            response = userClient.verifyWorkspace(
+                    LoginUserRequest.builder()
+                            .userId(authUser.getId())
+                            .workspace(req.getWorkspace())
+                            .build()
+                    );
+            } catch (Exception e) {
+                log.error("[Login] Feign call failed", e);
+                throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
+            }
+            if(response == null) {
+                throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            if(!response.isValid()) {
+                throw new NotFoundException(ErrorStatus.USER_BY_WORKSPACE_NOT_FOUND);
+            }
+
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
         refreshTokenService.deleteAllByUser(authUser.getId());
 
@@ -150,7 +169,6 @@ public class AuthService {
 
         return LoginResponse.builder()
                 .userId(authUser.getId())
-                .role(authUser.getRole())
                 .accessToken(access)
                 .refreshToken(refresh)
                 .expiresIn(accessTokenExpiration)
@@ -225,14 +243,5 @@ public class AuthService {
         blacklistTokenService.add(accessToken, claims);
 
         log.info("[Logout] userId={} / jti={} / exp={}", userId, claims.getId(), claims.getExpiration());
-    }
-
-
-    private String stripBearer(String token) {
-        if (token == null) return null;
-        if (token.regionMatches(true, 0, "Bearer ", 0, 7)) {
-            return token.substring(7);
-        }
-        return token;
     }
 }
