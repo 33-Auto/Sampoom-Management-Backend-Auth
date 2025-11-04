@@ -42,6 +42,6 @@ public class SwaggerConfig {
                         .addSecuritySchemes("bearerAuth", bearerAuth)
                 )
                 .addSecurityItem(bearerAuthRequirement)
-                .servers(List.of(localServer, prodServer));
+                .servers(List.of(prodServer, localServer));
     }
 }

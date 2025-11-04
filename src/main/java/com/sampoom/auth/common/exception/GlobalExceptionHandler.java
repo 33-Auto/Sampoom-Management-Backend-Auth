@@ -4,6 +4,7 @@ import com.sampoom.auth.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -16,6 +17,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleBaseException(BaseException e) {
         return ResponseEntity.status(e.getStatusCode())
                 .body(ApiResponse.errorWithCode(e.getErrorCode(), e.getResponseMessage()));
+    }
+
+    @ExceptionHandler(HttpMessageConversionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConversionException(HttpMessageConversionException e) {
+        log.warn("요청 변환 오류: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.errorWithCode(11402, "요청 형식이 올바르지 않습니다. Enum 또는 타입 값을 확인하세요."));
     }
 
     @ExceptionHandler(RuntimeException.class)

@@ -10,26 +10,34 @@ import org.springframework.http.HttpStatus;
 public enum ErrorStatus {
 
     // 400 BAD_REQUEST
-    EXPIRATION_NULL(HttpStatus.BAD_REQUEST,"누락(Null)된 만료날짜입니다.",10410),
-    TOKEN_NULL_BLANK(HttpStatus.BAD_REQUEST,"Null 또는 공백인 토큰입니다.",10407),
+    NULL_EXPIRATION(HttpStatus.BAD_REQUEST, "누락(Null)된 만료날짜입니다.", 12403),
+    NULL_TOKEN(HttpStatus.BAD_REQUEST,"토큰 값은 Null이면 안됩니다.",12401),
+    BLANK_TOKEN(HttpStatus.BAD_REQUEST,"토큰 값은 공백이면 안됩니다.",12400),
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청의 형식, 타입, 파라미터 등이 맞지 않습니다.",11400),
+    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST,"요청의 파라미터 입력 값이 유효하지 않습니다.",11402),
+
     // 401 UNAUTHORIZED
-    USER_PASSWORD_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 비밀번호입니다.",10402),
-    TOKEN_INVALID(HttpStatus.UNAUTHORIZED,"유효하지 않은 토큰입니다.",10404),
-    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED,"만료된 토큰입니다.",10405),
-    TOKEN_TYPE_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰 타입입니다.",10406),
-    USER_DEACTIVATED(HttpStatus.UNAUTHORIZED,"비활성화된 유저입니다.",10410),
+    INVALID_USER_PASSWORD(HttpStatus.UNAUTHORIZED, "유효하지 않은 비밀번호입니다.",11410),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다.", 12410),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다.", 12411),
+    INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰 타입입니다.", 12412),
+    DEACTIVATED_USER(HttpStatus.UNAUTHORIZED, "비활성화된 유저입니다.", 11411),
+
     // 403 FORBIDDEN
 
     // 404 NOT_FOUND
-    USER_BY_EMAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "이메일로 해당 유저를 찾을 수 없습니다.",10401),
-    USER_BY_WORKSPACE_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 조직 내에서 유저를 찾을 수 없습니다.",10416),
+    NOT_FOUND_USER_BY_EMAIL(HttpStatus.NOT_FOUND, "이메일로 해당 유저를 찾을 수 없습니다.", 11442),
+    NOT_FOUND_USER_BY_WORKSPACE(HttpStatus.NOT_FOUND,"해당 조직 내에서 유저를 찾을 수 없습니다.",11441),
     // 409 CONFLICT
-    USER_EMAIL_DUPLICATED(HttpStatus.CONFLICT, "이미 존재하는 유저의 이메일입니다.", 10400),
+    DUPLICATED_USER_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 유저의 이메일입니다.", 11490),
 
     // 500 INTERNAL_SERVER_ERROR
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "요청 처리 중 서버 측에 오류가 발생했습니다.", 10500)
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.", 10500),
+    FAILED_CONNECTION(HttpStatus.INTERNAL_SERVER_ERROR,"요청이 서버 측에 전달조차 되지 않았습니다.",10502),
+    OUTBOX_SERIALIZATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"Outbox 직렬화에 실패했습니다.",10505)
 
     ;
+
     private final HttpStatus httpStatus;
     private final String message;
     private final int code;

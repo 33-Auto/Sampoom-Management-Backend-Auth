@@ -13,9 +13,6 @@ import com.sampoom.auth.api.auth.dto.response.RefreshResponse;
 import com.sampoom.auth.common.jwt.JwtAuthFilter;
 import com.sampoom.auth.common.jwt.JwtProvider;
 import com.sampoom.auth.api.auth.service.AuthService;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,7 +36,6 @@ import static com.sampoom.auth.api.auth.utils.CookieUtils.clearAuthCookies;
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtProvider jwtProvider;
     private final JwtAuthFilter jwtAuthFilter;
 
     @Value("${jwt.access-ttl-seconds}")
@@ -114,7 +110,7 @@ public class AuthController {
 
         // 토큰 유효성 검증
         if (refreshToken == null || refreshToken.isBlank()) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+            throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
         }
 
         RefreshResponse resp = authService.refresh(refreshToken);
@@ -140,29 +136,14 @@ public class AuthController {
             @RequestHeader(value = "X-Client-Type", defaultValue = "APP") String clientType
     ) {
         String accessToken = jwtAuthFilter.resolveAccessToken(request, clientType);
-        if (accessToken == null || accessToken.isBlank()) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_NULL_BLANK);
-        }
+        // 서비스에서 모든 예외 및 분기 처리 (WEB/APP 구분 포함)
+        authService.logout(accessToken, clientType);
 
-        Claims claims;
-        try {
-            claims = jwtProvider.parse(accessToken);
-        } catch (ExpiredJwtException e) {
-            claims = e.getClaims();
-            if (claims == null) {
-                throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
-            }
-        } catch (JwtException | IllegalArgumentException e) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
-        }
-        Long userId = Long.valueOf(claims.getSubject());
-
-        // WEB: 쿠키 삭제
+        // WEB의 경우, 쿠키 삭제
         if ("WEB".equalsIgnoreCase(clientType)) {
-            // 쿠키 초기화 유틸
             clearAuthCookies(response);
         }
-        authService.logout(userId, accessToken);
+
         return ApiResponse.success_only(SuccessStatus.OK);
     }
 }

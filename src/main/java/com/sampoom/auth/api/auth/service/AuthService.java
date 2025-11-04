@@ -12,17 +12,14 @@ import com.sampoom.auth.api.auth.outbox.OutboxEvent;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
 import com.sampoom.auth.api.auth.outbox.OutboxRepository;
 import com.sampoom.auth.common.entity.Role;
-import com.sampoom.auth.common.exception.ConflictException;
-import com.sampoom.auth.common.exception.InternalServerErrorException;
-import com.sampoom.auth.common.exception.NotFoundException;
-import com.sampoom.auth.common.exception.UnauthorizedException;
-import com.sampoom.auth.common.response.ApiResponse;
+import com.sampoom.auth.common.exception.*;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.dto.request.LoginRequest;
 import com.sampoom.auth.api.auth.internal.client.UserClient;
 import com.sampoom.auth.api.auth.dto.response.LoginResponse;
 import com.sampoom.auth.api.auth.dto.response.RefreshResponse;
 import com.sampoom.auth.common.jwt.JwtProvider;
+import feign.FeignException;
 import io.jsonwebtoken.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +28,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -43,9 +41,9 @@ import java.util.UUID;
 public class AuthService {
 
     @Value("${jwt.access-ttl-seconds}")
-    private int accessTokenExpiration;
+    private Long accessTokenExpiration;
     @Value("${jwt.refresh-ttl-seconds}")
-    private int refreshTokenExpiration;
+    private Long refreshTokenExpiration;
     @Value("${user.service.url:defaultValue}")
     private String userServiceUrl;
     // 인증 관련
@@ -64,7 +62,7 @@ public class AuthService {
         // 유저 비활성화 여부 확인
         Optional<AuthUser> user = authUserRepository.findByEmail(req.getEmail());
         if(user.isPresent()) {
-                throw new ConflictException(ErrorStatus.USER_EMAIL_DUPLICATED);
+                throw new ConflictException(ErrorStatus.DUPLICATED_USER_EMAIL);
         }
 
         // AuthUser 생성 ( 이메일, 비밀번호만 담은 User 인증 정보 )
@@ -88,6 +86,7 @@ public class AuthService {
                         .build())
                 .build();
 
+        // 해당 이벤트를 Outbox 저장
         try {
             String payloadJson = objectMapper.writeValueAsString(evt);
             outboxRepo.save(OutboxEvent.builder()
@@ -98,12 +97,11 @@ public class AuthService {
                     .build());
 
         } catch (Exception e) {
-            throw new RuntimeException("Outbox serialize failed", e);
+            throw new InternalServerErrorException(ErrorStatus.OUTBOX_SERIALIZATION_ERROR);
         }
 
         // User 프로필 생성 ( 이메일, 비밀번호를 제외한 User 기본 정보 )
         try {
-            log.info("[Feign call] user.service.url = {}", userServiceUrl);
             userClient.createProfile(SignupUser.builder()
                     .userId(authUser.getId())
                     .userName(req.getUserName())
@@ -111,10 +109,19 @@ public class AuthService {
                     .branch(req.getBranch())
                     .position(req.getPosition())
                     .build());
-        } catch (Exception e) {
-            log.error("[Signup] Feign call failed", e);
-            // AuthUser 롤백 보장
+        }
+        // Feign 예외 처리: User 롤백 보장
+        // 클라이언트 측 요청 오류
+        catch (FeignException.FeignClientException e) {
+            throw new BadRequestException(ErrorStatus.INVALID_REQUEST);
+        }
+        // 서버 측 처리 오류
+        catch (FeignException.FeignServerException e) {
             throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
+        }
+        // 네트워크 연결 오류 (User 서비스 다운 등)
+        catch (ResourceAccessException e) {
+            throw new InternalServerErrorException(ErrorStatus.FAILED_CONNECTION);
         }
 
         // 응답 DTO 반환
@@ -123,38 +130,41 @@ public class AuthService {
                 .email(req.getEmail())
                 .userName(req.getUserName())
                 .build();
-    }
+        }
 
     public LoginResponse login(LoginRequest req) {
         // user에 담자마자 이메일 존재 여부 체크
         AuthUser authUser = authUserRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new UnauthorizedException(ErrorStatus.USER_BY_EMAIL_NOT_FOUND));
+                .orElseThrow(() -> new UnauthorizedException(ErrorStatus.NOT_FOUND_USER_BY_EMAIL));
 
         // 비밀번호 불일치
         if (!passwordEncoder.matches(req.getPassword(), authUser.getPassword())) {
-            throw new UnauthorizedException(ErrorStatus.USER_PASSWORD_INVALID);
+            throw new UnauthorizedException(ErrorStatus.INVALID_USER_PASSWORD);
         }
 
-        LoginUserResponse response;
+        LoginUserResponse verifyResponse;
         try {
-            log.info("[Feign call] user.service.url = {}", userServiceUrl);
-            response = userClient.verifyWorkspace(
+            verifyResponse = userClient.verifyWorkspace(
                     LoginUserRequest.builder()
                             .userId(authUser.getId())
                             .workspace(req.getWorkspace())
                             .build()
-                    );
-            } catch (Exception e) {
-                log.error("[Login] Feign call failed", e);
-                throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
-            }
-            if(response == null) {
-                throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
-            }
+            );
+        } catch (FeignException e) {
+            int status = e.status();
+            if (status == 404)
+                throw new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_WORKSPACE);
+            if (status >= 400 && status < 500)
+                throw new BadRequestException(ErrorStatus.INVALID_REQUEST);
+            throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
+        } catch (ResourceAccessException e) {
+            throw new InternalServerErrorException(ErrorStatus.FAILED_CONNECTION);
+        }
 
-            if(!response.isValid()) {
-                throw new NotFoundException(ErrorStatus.USER_BY_WORKSPACE_NOT_FOUND);
-            }
+        if (verifyResponse == null)
+            throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
+        if (!verifyResponse.isValid())
+            throw new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_WORKSPACE);
 
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
         refreshTokenService.deleteAllByUser(authUser.getId());
@@ -183,13 +193,13 @@ public class AuthService {
             // 토큰 파싱 및 예외 처리
             refreshClaims = jwtProvider.parse(refreshToken); // 만료 시 ExpiredJwtException 자동 발생
         } catch (ExpiredJwtException e) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_EXPIRED);
+            throw new UnauthorizedException(ErrorStatus.EXPIRED_TOKEN);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+            throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
         }
         String tokenType = refreshClaims.get("type", String.class);
         if (!"refresh".equals(tokenType)) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_TYPE_INVALID);
+            throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN_TYPE);
         }
 
         Long userId = Long.valueOf(refreshClaims.getSubject());
@@ -197,7 +207,7 @@ public class AuthService {
 
         // 토큰 유효성 검증 (DB에 저장된 토큰과 비교)
         if (!refreshTokenService.validate(userId, jti, refreshToken)) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_INVALID);
+            throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
         }
 
         // 동일한 jti로
@@ -207,8 +217,7 @@ public class AuthService {
         refreshTokenService.deleteAllByUser(userId);
 
         // 토큰에서 바로 정보 꺼내기 (DB 조회)
-        String roleStr = refreshClaims.get("role", String.class);
-        Role role = Role.valueOf(roleStr);
+        Role role = Role.valueOf(refreshClaims.get("role", String.class));
 
         // 새로운 Access/Refresh 토큰 생성
         String newJti = UUID.randomUUID().toString();
@@ -226,22 +235,36 @@ public class AuthService {
                 .build();
 }
 
-    public void logout(Long userId, String accessToken) {
+    public void logout(String accessToken, String clientType) {
+        // WEB
+        if ("WEB".equalsIgnoreCase(clientType)) {
+            if (accessToken == null) {
+                return; // 이미 만료되어 쿠키 사라졌음
+            }
+        }
+        // APP
+        if (accessToken == null)
+            throw new UnauthorizedException(ErrorStatus.NULL_TOKEN);
+        if (accessToken.isBlank())
+            throw new UnauthorizedException(ErrorStatus.BLANK_TOKEN);
+
         Claims claims;
         // 만료된 토큰도 블랙리스트 등록
         try {
             claims = jwtProvider.parse(accessToken);
         } catch (ExpiredJwtException e) {
-            claims = e.getClaims(); // 만료돼도 jti, sub, exp는 있음
+            claims = e.getClaims(); // 만료돼도 claims 복원 및 로그아웃
+        } catch (JwtException | IllegalArgumentException e) {
+            // 완전히 위조되거나 손상된 토큰만 차단
+            throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
         }
 
         if (claims == null) {
-            throw new UnauthorizedException(ErrorStatus.TOKEN_NULL_BLANK);
+            throw new UnauthorizedException(ErrorStatus.NULL_TOKEN);
         }
-
+        Long userId = Long.valueOf(claims.getSubject());
+        // 기존 리프레시/엑세스 토큰 무효화
         refreshTokenService.deleteAllByUser(userId);
         blacklistTokenService.add(accessToken, claims);
-
-        log.info("[Logout] userId={} / jti={} / exp={}", userId, claims.getId(), claims.getExpiration());
     }
 }
