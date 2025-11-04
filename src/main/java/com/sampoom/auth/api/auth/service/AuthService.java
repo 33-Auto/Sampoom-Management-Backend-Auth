@@ -120,8 +120,11 @@ public class AuthService {
             throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
         }
         // 네트워크 연결 오류 (User 서비스 다운 등)
-        catch (ResourceAccessException e) {
-            throw new InternalServerErrorException(ErrorStatus.FAILED_CONNECTION);
+        catch (FeignException e) {
+            if (e.status() == -1) {
+                throw new InternalServerErrorException(ErrorStatus.FAILED_CONNECTION);
+            }
+            throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
         }
 
         // 응답 DTO 반환

@@ -1,6 +1,5 @@
 package com.sampoom.auth.common.config.security;
 
-import com.sampoom.auth.common.exception.CustomAuthenticationException;
 import com.sampoom.auth.common.jwt.JwtAuthFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -13,7 +12,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
@@ -22,7 +20,7 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter, CustomAuthEntryPoint customAuthEntryPoint) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,CustomAuthEntryPoint customAuthEntryPoint) throws Exception {
         http
                 .logout(logout -> logout.disable())
                 // CodeQL [java/spring-disabled-csrf-protection]: suppress - Stateless JWT API라 CSRF 불필요
@@ -59,9 +57,9 @@ public class SecurityConfig {
                     corsConfig.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Client-Type"));
                     return corsConfig;
                 }))
-                .addFilterAfter(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(ex -> ex
-                        // 인증 실패(UnauthorizedException 포함) 시 커스텀 엔트리포인트
+                        // 인증 실패 시 INVALID_TOKEN
                         .authenticationEntryPoint(customAuthEntryPoint)
                 );
         return http.build();
