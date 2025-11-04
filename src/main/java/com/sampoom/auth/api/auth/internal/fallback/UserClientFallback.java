@@ -10,18 +10,15 @@ import com.sampoom.auth.common.response.ErrorStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-/**
- * User 서비스 장애(타임아웃, 500 등) 시 기본 동작 정의
- * - 보통은 null 반환하거나, 커스텀 예외를 던지도록 한다.
- */
 @Component
 public class UserClientFallback implements UserClient {
     @Override
-    public void createProfile(@RequestBody SignupUser req){
+    public void createProfile(@RequestBody SignupUser req) {
         throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
     }
+
     @Override
-    public LoginUserResponse verifyWorkspace(@RequestBody LoginUserRequest req){
+    public LoginUserResponse verifyWorkspace(@RequestBody LoginUserRequest req) {
         throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
     }
 }

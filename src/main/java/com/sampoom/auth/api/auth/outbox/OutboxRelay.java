@@ -11,10 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-/**
- * 발행하지 않은 Outbox에 쌓인 이벤트를 주기적으로 일괄 처리
- */
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
