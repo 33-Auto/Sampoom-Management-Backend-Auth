@@ -102,15 +102,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             );
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            filterChain.doFilter(request, response);
+
         } catch (CustomAuthenticationException ex) {
             SecurityContextHolder.clearContext();
             customAuthEntryPoint.commence(request, response, ex);
+            return;
         } catch (Exception ex) {
             SecurityContextHolder.clearContext();
             customAuthEntryPoint.commence(request, response,
                     new CustomAuthenticationException(ErrorStatus.INVALID_TOKEN));
+            return;
         }
+        filterChain.doFilter(request, response);
     }
 
 
