@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import static com.sampoom.auth.api.auth.utils.CookieUtils.addAuthCookies;
@@ -36,7 +37,7 @@ import static com.sampoom.auth.api.auth.utils.CookieUtils.clearAuthCookies;
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtAuthFilter jwtAuthFilter;
+    private final JwtProvider jwtProvider;
 
     @Value("${jwt.access-ttl-seconds}")
     private long accessTtlSeconds;
@@ -88,7 +89,7 @@ public class AuthController {
     ) {
     // 리프레시 토큰 추출
         String refreshToken = null;
-        // WEB: 쿠키에서
+        // WEB: 쿠키에서 추출
         if ("WEB".equalsIgnoreCase(clientType)) {
             if (request.getCookies() != null) {
                 // 두 쿠키 중에
@@ -101,16 +102,11 @@ public class AuthController {
                 }
             }
         }
-        // APP: 헤더에서
+        // APP: 헤더에서 추출
         else if ("APP".equalsIgnoreCase(clientType)) {
             if (refreshRequest != null) {
                 refreshToken = refreshRequest.getRefreshToken();
             }
-        }
-
-        // 토큰 유효성 검증
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
         }
 
         RefreshResponse resp = authService.refresh(refreshToken);
@@ -135,7 +131,28 @@ public class AuthController {
             HttpServletResponse response,
             @RequestHeader(value = "X-Client-Type", defaultValue = "APP") String clientType
     ) {
-        String accessToken = jwtAuthFilter.resolveAccessToken(request, clientType);
+        String accessToken = jwtProvider.resolveAccessToken(request, clientType);
+        // 서비스에서 모든 예외 및 분기 처리 (WEB/APP 구분 포함)
+        authService.logout(accessToken, clientType);
+
+        // WEB의 경우, 쿠키 삭제
+        if ("WEB".equalsIgnoreCase(clientType)) {
+            clearAuthCookies(response);
+        }
+
+        return ApiResponse.success_only(SuccessStatus.OK);
+    }
+
+    @PostMapping("/role")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @Operation(summary = "권한 변경", description = "특정 유저의 접근 권한을 변경합니다. 관리자 권한만 변경이 가능합니다.")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<Void>> changeRole(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            @RequestHeader(value = "X-Client-Type", defaultValue = "APP") String clientType
+    ) {
+        String accessToken = jwtProvider.resolveAccessToken(request, clientType);
         // 서비스에서 모든 예외 및 분기 처리 (WEB/APP 구분 포함)
         authService.logout(accessToken, clientType);
 
