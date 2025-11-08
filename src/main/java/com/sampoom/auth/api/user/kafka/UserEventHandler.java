@@ -49,6 +49,7 @@ public class UserEventHandler {
         }
         catch (JsonProcessingException ex) {
             log.error("[AuthUserEventHandler] 이벤트 포맷 오류: {}", message, ex);
+            ack.acknowledge();
             throw new InternalServerErrorException(ErrorStatus.INVALID_EVENT_FORMAT);
         }
         catch (KafkaException ex) {

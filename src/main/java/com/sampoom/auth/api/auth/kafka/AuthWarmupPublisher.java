@@ -48,7 +48,7 @@ public class AuthWarmupPublisher {
                     .build();
 
             String payload = objectMapper.writeValueAsString(evt);
-            kafka.send(userEventsTopic, payload);
+            kafka.send(userEventsTopic, payload).get();
             log.info("AuthSystemWarmup 이벤트 발행 완료 (topic={})", userEventsTopic);
         } catch (Exception e) {
             log.error("AuthSystemWarmup 이벤트 발행 실패", e);

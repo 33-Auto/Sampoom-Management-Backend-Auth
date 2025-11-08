@@ -154,7 +154,7 @@ public class AuthService {
         }
 
         UserProjection userProjection = userProjectionRepo.findByUserId(authUser.getId())
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_ID));
+                .orElse(null);
         if (userProjection == null) {
             log.warn("[AuthService] UserProjection not found for userId={}, temporary bypass", authUser.getId());
         } else {
