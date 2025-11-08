@@ -286,6 +286,10 @@ public class AuthService {
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_ID));
 
         authUser.setRole(newRole);
+
+        // version / updatedAt 필드가 즉시 반영되도록 flush
+        authUserRepository.saveAndFlush(authUser);
+
         // Outbox 이벤트 생성 (User & Employee가 구독)
          AuthUserUpdatedEvent evt = AuthUserUpdatedEvent.builder()
                 .eventId(UUID.randomUUID().toString())

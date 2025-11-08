@@ -150,12 +150,17 @@
         @PatchMapping("/role/{userId}")
         @PreAuthorize("hasAuthority('ROLE_ADMIN')")
         @Operation(summary = "권한 변경", description = "특정 유저의 접근 권한을 변경합니다. 관리자 권한만 변경이 가능합니다.")
-        public ResponseEntity<ApiResponse<RoleResponse>> changeRole(
+        public ResponseEntity<ApiResponse<RoleResponse>> updateRole(
                 Authentication authentication,
                 @PathVariable Long userId,
                 @RequestBody RoleRequest roleRequest
         ) {
-            Long adminId = Long.valueOf(authentication.getName());
+            Long adminId;
+            try {
+                adminId = Long.valueOf(authentication.getName());
+            } catch (NumberFormatException e) {
+                throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
+            }
             log.info("관리자ID: {} 관리자가 -> 직원ID: {} 직원의 권한 정보를 수정했습니다. ", adminId, userId);
             RoleResponse resp = authService.updateRole(userId, roleRequest);
             return ApiResponse.success(SuccessStatus.OK, resp);

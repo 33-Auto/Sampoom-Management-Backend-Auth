@@ -1,6 +1,7 @@
 package com.sampoom.auth.api.auth.dto.request;
 
 import com.sampoom.auth.common.entity.Role;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,5 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class RoleRequest {
+    @NotNull
     private Role role;
 }

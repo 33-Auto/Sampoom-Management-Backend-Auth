@@ -51,7 +51,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
         // accessToken 추출
         String accessToken = jwtProvider.resolveAccessToken(request);
-        log.info("[DEBUG] path={} clientType={} token={}", path, clientType, accessToken);
+        log.info("[DEBUG] path={} clientType={}", path, clientType);
 
         try {
             if (accessToken == null) {
