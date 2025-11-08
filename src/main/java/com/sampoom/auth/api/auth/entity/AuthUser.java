@@ -2,6 +2,7 @@ package com.sampoom.auth.api.auth.entity;
 
 import com.sampoom.auth.common.entity.BaseTimeEntity;
 import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.entity.SoftDeleteEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,7 +14,7 @@ import static com.sampoom.auth.common.entity.Role.USER;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AuthUser extends BaseTimeEntity {
+public class AuthUser extends SoftDeleteEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,8 +31,23 @@ public class AuthUser extends BaseTimeEntity {
     @Column(nullable = false)
     private Role role = USER;
 
+    @Version
+    private Long version; // 낙관적 락 & 이벤트 버전 관리
+
     @PrePersist
     public void prePersist() {
+
         if (this.role == null) this.role = USER;
+        if (version == null) version = 0L;
     }
+
+    @PreUpdate
+    public void preUpdate() {
+        if (version == null) version = 0L;
+    }
+
+    public void setRole(Role newRole) {
+        this.role = newRole;
+    }
+
 }

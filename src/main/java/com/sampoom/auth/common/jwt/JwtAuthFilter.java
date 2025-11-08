@@ -50,7 +50,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
         // accessToken 추출
-        String accessToken = resolveAccessToken(request, clientType);
+        String accessToken = jwtProvider.resolveAccessToken(request);
+        log.info("[DEBUG] path={} clientType={}", path, clientType);
+
         try {
             if (accessToken == null) {
                 throw new CustomAuthenticationException(ErrorStatus.NULL_TOKEN);
@@ -114,29 +116,5 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
         filterChain.doFilter(request, response);
-    }
-
-
-    public String resolveAccessToken(HttpServletRequest request, String clientType) {
-        switch (clientType.toUpperCase()) {
-            case "APP" -> {
-                String header = request.getHeader("Authorization");
-                if (header == null) return null;
-                if (!header.startsWith("Bearer "))
-                    throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
-                return header.substring(7);
-            }
-            case "WEB" -> {
-                if (request.getCookies() != null) {
-                    for (Cookie cookie : request.getCookies()) {
-                        if ("ACCESS_TOKEN".equals(cookie.getName())) {
-                            return cookie.getValue();
-                        }
-                    }
-                }
-                return null;
-            }
-            default -> throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
-        }
     }
 }

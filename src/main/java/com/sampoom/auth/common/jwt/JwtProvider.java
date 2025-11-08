@@ -1,7 +1,13 @@
 package com.sampoom.auth.common.jwt;
 
 import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.exception.BadRequestException;
+import com.sampoom.auth.common.exception.CustomAuthenticationException;
+import com.sampoom.auth.common.exception.UnauthorizedException;
+import com.sampoom.auth.common.response.ErrorStatus;
 import io.jsonwebtoken.*;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -60,9 +66,41 @@ public class JwtProvider {
                 .compact();
     }
 
+    public String resolveAccessToken(HttpServletRequest request) {
+        // 쿠키에서 ACCESS_TOKEN 찾기
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("ACCESS_TOKEN".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        // Bearer 방식일 때
+        String header = request.getHeader("Authorization");
+        if (header == null) return null;
+        if (!header.startsWith("Bearer "))
+            throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
+        return header.substring(7); // "Bearer " 제거
+    }
+
     public Claims parse(String token) {
-        return Jwts.parserBuilder().setSigningKey(getKey()).build()
-                .parseClaimsJws(token).getBody();
+        if (token == null) {
+            throw new BadRequestException(ErrorStatus.NULL_TOKEN);
+        }
+        if (token.isBlank()){
+            throw new BadRequestException(ErrorStatus.BLANK_TOKEN);
+        }
+        try{
+            return Jwts.parserBuilder().setSigningKey(getKey()).build()
+                    .parseClaimsJws(token).getBody();
+        }
+        catch (ExpiredJwtException e) {
+            throw new CustomAuthenticationException(ErrorStatus.EXPIRED_TOKEN);
+        }
+        catch (Exception e) {
+            // 잘못된 형식 or 위조된 토큰
+            throw new CustomAuthenticationException(ErrorStatus.INVALID_TOKEN);
+        }
     }
 
     // 내부 Feign용 인증 토큰

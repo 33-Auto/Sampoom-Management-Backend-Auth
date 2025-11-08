@@ -35,14 +35,14 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().hasAuthority("ROLE_USER")
                 )
                 // 기본 폼 로그인 비활성화
                 .formLogin(login -> login.disable())
                 .httpBasic(basic -> basic.disable())
                 // 세션 미사용 명시
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // CORS 허용 설정
+                // CORS 비활성화(배포 시)
 //                .cors(cors -> cors.configurationSource(request -> {
 //                    var corsConfig = new CorsConfiguration();
 //                    corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
