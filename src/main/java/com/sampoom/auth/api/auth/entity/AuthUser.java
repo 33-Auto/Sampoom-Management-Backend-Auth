@@ -36,10 +36,18 @@ public class AuthUser extends SoftDeleteEntity {
 
     @PrePersist
     public void prePersist() {
+
         if (this.role == null) this.role = USER;
+        if (version == null) version = 0L;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        if (version == null) version = 0L;
     }
 
     public void setRole(Role newRole) {
         this.role = newRole;
     }
+
 }
