@@ -36,6 +36,7 @@ import org.springframework.web.client.ResourceAccessException;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -160,7 +161,7 @@ public class AuthService {
         } else {
             // 기존 workspace, status 검증
             // 워크스페이스 일치 여부 확인
-            if (req.getWorkspace() != userProjection.getWorkspace()) {
+            if (!Objects.equals(req.getWorkspace(), userProjection.getWorkspace())) {
                 throw new BadRequestException(ErrorStatus.INVALID_WORKSPACE_TYPE);
             }
 
