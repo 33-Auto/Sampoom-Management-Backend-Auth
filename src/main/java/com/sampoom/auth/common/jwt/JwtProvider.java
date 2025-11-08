@@ -66,27 +66,21 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String resolveAccessToken(HttpServletRequest request, String clientType) {
-        switch (clientType.toUpperCase()) {
-            case "APP" -> {
-                String header = request.getHeader("Authorization");
-                if (header == null) return null;
-                if (!header.startsWith("Bearer "))
-                    throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
-                return header.substring(7);
-            }
-            case "WEB" -> {
-                if (request.getCookies() != null) {
-                    for (Cookie cookie : request.getCookies()) {
-                        if ("ACCESS_TOKEN".equals(cookie.getName())) {
-                            return cookie.getValue();
-                        }
-                    }
+    public String resolveAccessToken(HttpServletRequest request) {
+        // 쿠키에서 ACCESS_TOKEN 찾기
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("ACCESS_TOKEN".equals(cookie.getName())) {
+                    return cookie.getValue();
                 }
-                return null;
             }
-            default -> throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
         }
+        // Bearer 방식일 때
+        String header = request.getHeader("Authorization");
+        if (header == null) return null;
+        if (!header.startsWith("Bearer "))
+            throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
+        return header.substring(7); // "Bearer " 제거
     }
 
     public Claims parse(String token) {

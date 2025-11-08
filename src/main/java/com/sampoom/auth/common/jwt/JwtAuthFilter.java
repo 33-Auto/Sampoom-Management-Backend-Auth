@@ -50,7 +50,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
         // accessToken 추출
-        String accessToken = jwtProvider.resolveAccessToken(request, clientType);
+        String accessToken = jwtProvider.resolveAccessToken(request);
+        log.info("[DEBUG] path={} clientType={} token={}", path, clientType, accessToken);
+
         try {
             if (accessToken == null) {
                 throw new CustomAuthenticationException(ErrorStatus.NULL_TOKEN);

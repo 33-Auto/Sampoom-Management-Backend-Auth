@@ -1,10 +1,13 @@
 package com.sampoom.auth.api.auth.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sampoom.auth.api.auth.dto.request.RoleRequest;
 import com.sampoom.auth.api.auth.dto.request.SignupRequest;
+import com.sampoom.auth.api.auth.dto.response.RoleResponse;
 import com.sampoom.auth.api.auth.dto.response.SignupResponse;
 import com.sampoom.auth.api.auth.entity.AuthUser;
 import com.sampoom.auth.api.auth.event.AuthUserSignedUpEvent;
+import com.sampoom.auth.api.auth.event.AuthUserUpdatedEvent;
 import com.sampoom.auth.api.auth.internal.dto.LoginUserRequest;
 import com.sampoom.auth.api.auth.internal.dto.LoginUserResponse;
 import com.sampoom.auth.api.auth.internal.dto.SignupUser;
@@ -31,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -76,8 +80,9 @@ public class AuthService {
         // Outbox 이벤트 생성 (User & Employee가 구독)
         AuthUserSignedUpEvent evt = AuthUserSignedUpEvent.builder()
                 .eventId(UUID.randomUUID().toString())
-                .eventType("UserSignedUp")
+                .eventType("AuthUserSignedUp")
                 .occurredAt(java.time.OffsetDateTime.now().toString())
+                .version(authUser.getVersion())
                 .payload(AuthUserSignedUpEvent.Payload.builder()
                         .userId(authUser.getId())
                         .email(authUser.getEmail())
@@ -269,5 +274,48 @@ public class AuthService {
         // 기존 리프레시/엑세스 토큰 무효화
         refreshTokenService.deleteAllByUser(userId);
         blacklistTokenService.add(accessToken, claims);
+    }
+
+    @Transactional
+    public RoleResponse updateRole(Long userId, RoleRequest req) {
+        if (userId == null || req==null || req.getRole() == null) {
+            throw new BadRequestException(ErrorStatus.INVALID_INPUT_VALUE);
+        }
+        Role newRole = req.getRole();
+        AuthUser authUser = authUserRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_ID));
+
+        authUser.setRole(newRole);
+        // Outbox 이벤트 생성 (User & Employee가 구독)
+         AuthUserUpdatedEvent evt = AuthUserUpdatedEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .eventType("AuthUserUpdated")
+                .occurredAt(OffsetDateTime.now().toString())
+                 .version(authUser.getVersion())
+                .payload(AuthUserUpdatedEvent.Payload.builder()
+                        .userId(authUser.getId())
+                        .email(authUser.getEmail())
+                        .role(authUser.getRole())
+                        .updatedAt(authUser.getUpdatedAt())
+                        .build())
+                .build();
+
+        // 해당 이벤트를 Outbox 저장
+        try {
+            String payloadJson = objectMapper.writeValueAsString(evt);
+            outboxRepo.save(OutboxEvent.builder()
+                    .eventType(evt.getEventType())
+                    .aggregateId(authUser.getId())
+                    .payload(payloadJson)
+                    .published(false)
+                    .build());
+
+        } catch (Exception e) {
+            throw new InternalServerErrorException(ErrorStatus.OUTBOX_SERIALIZATION_ERROR);
+        }
+        return RoleResponse.builder()
+                .userId(authUser.getId())
+                .role(authUser.getRole())
+                .build();
     }
 }

@@ -1,7 +1,10 @@
 package com.sampoom.auth.api.auth.controller;
 
+import com.sampoom.auth.api.auth.dto.request.RoleRequest;
 import com.sampoom.auth.api.auth.dto.request.SignupRequest;
+import com.sampoom.auth.api.auth.dto.response.RoleResponse;
 import com.sampoom.auth.api.auth.dto.response.SignupResponse;
+import com.sampoom.auth.common.entity.Workspace;
 import com.sampoom.auth.common.exception.UnauthorizedException;
 import com.sampoom.auth.common.response.ApiResponse;
 import com.sampoom.auth.common.response.ErrorStatus;
@@ -25,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import static com.sampoom.auth.api.auth.utils.CookieUtils.addAuthCookies;
@@ -131,7 +135,7 @@ public class AuthController {
             HttpServletResponse response,
             @RequestHeader(value = "X-Client-Type", defaultValue = "APP") String clientType
     ) {
-        String accessToken = jwtProvider.resolveAccessToken(request, clientType);
+        String accessToken = jwtProvider.resolveAccessToken(request);
         // 서비스에서 모든 예외 및 분기 처리 (WEB/APP 구분 포함)
         authService.logout(accessToken, clientType);
 
@@ -143,24 +147,17 @@ public class AuthController {
         return ApiResponse.success_only(SuccessStatus.OK);
     }
 
-    @PostMapping("/role")
+    @PatchMapping("/role/{userId}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @Operation(summary = "권한 변경", description = "특정 유저의 접근 권한을 변경합니다. 관리자 권한만 변경이 가능합니다.")
-    @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<ApiResponse<Void>> changeRole(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            @RequestHeader(value = "X-Client-Type", defaultValue = "APP") String clientType
+    public ResponseEntity<ApiResponse<RoleResponse>> changeRole(
+            Authentication authentication,
+            @PathVariable Long userId,
+            @RequestBody RoleRequest roleRequest
     ) {
-        String accessToken = jwtProvider.resolveAccessToken(request, clientType);
-        // 서비스에서 모든 예외 및 분기 처리 (WEB/APP 구분 포함)
-        authService.logout(accessToken, clientType);
-
-        // WEB의 경우, 쿠키 삭제
-        if ("WEB".equalsIgnoreCase(clientType)) {
-            clearAuthCookies(response);
-        }
-
-        return ApiResponse.success_only(SuccessStatus.OK);
+        Long adminId = Long.valueOf(authentication.getName());
+        log.info("관리자ID: {} 관리자가 -> 직원ID: {} 직원의 권한 정보를 수정했습니다. ", adminId, userId);
+        RoleResponse resp = authService.updateRole(userId, roleRequest);
+        return ApiResponse.success(SuccessStatus.OK, resp);
     }
 }

@@ -26,6 +26,7 @@ public enum ErrorStatus {
     // 403 FORBIDDEN
 
     // 404 NOT_FOUND
+    NOT_FOUND_USER_BY_ID(HttpStatus.NOT_FOUND, "유저 고유 번호(userId)로 해당 유저를 찾을 수 없습니다.", 11440),
     NOT_FOUND_USER_BY_EMAIL(HttpStatus.NOT_FOUND, "이메일로 해당 유저를 찾을 수 없습니다.", 11442),
     NOT_FOUND_USER_BY_WORKSPACE(HttpStatus.NOT_FOUND,"해당 조직 내에서 유저를 찾을 수 없습니다.",11441),
     // 409 CONFLICT
