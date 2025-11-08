@@ -3,6 +3,7 @@ package com.sampoom.auth.api.auth.outbox;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -26,8 +27,8 @@ public class OutboxRelay {
     @Scheduled(fixedDelayString = "${app.outbox.relay-interval-ms:1000}")
     @Transactional
     public void publishPendingEvents() {
-        // 최대 200개의 미발행된 이벤트 일괄 처리
-        List<OutboxEvent> batch = repo.findTop200ByPublishedFalseOrderByCreatedAtAsc();
+        // 잠금 기반 안전 조회
+        List<OutboxEvent> batch = repo.findNextBatchWithLock(PageRequest.of(0, 200));
         log.info("총 {}개의 미발행된 이벤트를 발견했습니다.", batch.size());
         if (batch.isEmpty()) return;
         // 발견한 미발행 이벤트를 전부 전송
