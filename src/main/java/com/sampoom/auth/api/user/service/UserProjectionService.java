@@ -37,7 +37,7 @@ public class UserProjectionService {
         }
 
         // 역순 이벤트 차단 (버전 낮은 이벤트는 무시)
-        if (projection != null && incomingVer <= nvl(projection.getVersion(), 0L)) {
+        if (projection != null && incomingVer < nvl(projection.getVersion(), 0L)) {
             log.debug("[UserProjection] 버전 역순 이벤트 무시: eventVer={} < storedVer={}", incomingVer, projection.getVersion());
             return;
         }
@@ -79,7 +79,7 @@ public class UserProjectionService {
 
     @Transactional
     public void rebuildFromWarmup(UserWarmupEvent event) {
-        log.info("♻️ [UserProjectionService] Warmup 재구성 시작");
+        log.info("[UserProjectionService] Warmup 재구성 시작");
         repo.deleteAllInBatch();
 
         var all = new ArrayList<UserWarmupEvent.UserPayload>();
@@ -94,7 +94,7 @@ public class UserProjectionService {
                     .employeeStatus(p.getEmployeeStatus())
                     .version(p.getVersion())
                     .lastEventId(event.getEventId())
-                    .sourceUpdatedAt(parseOffset(String.valueOf(p.getCreatedAt())))
+                    .sourceUpdatedAt(parseOffset(String.valueOf(p.getUpdatedAt())))
                     .build();
             repo.save(projection);
         }
