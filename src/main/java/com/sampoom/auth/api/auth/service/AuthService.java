@@ -8,8 +8,6 @@ import com.sampoom.auth.api.auth.dto.response.SignupResponse;
 import com.sampoom.auth.api.auth.entity.AuthUser;
 import com.sampoom.auth.api.auth.event.AuthUserSignedUpEvent;
 import com.sampoom.auth.api.auth.event.AuthUserUpdatedEvent;
-import com.sampoom.auth.api.auth.internal.dto.LoginUserRequest;
-import com.sampoom.auth.api.auth.internal.dto.LoginUserResponse;
 import com.sampoom.auth.api.auth.internal.dto.SignupUser;
 import com.sampoom.auth.api.auth.outbox.OutboxEvent;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
@@ -22,8 +20,11 @@ import com.sampoom.auth.api.auth.internal.client.UserClient;
 import com.sampoom.auth.api.auth.dto.response.LoginResponse;
 import com.sampoom.auth.api.auth.dto.response.RefreshResponse;
 import com.sampoom.auth.common.jwt.JwtProvider;
+import com.sampoom.auth.api.user.entity.UserProjection;
+import com.sampoom.auth.api.user.repository.UserProjectionRepository;
 import feign.FeignException;
 import io.jsonwebtoken.*;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +36,7 @@ import org.springframework.web.client.ResourceAccessException;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -56,11 +58,13 @@ public class AuthService {
     private final BlacklistTokenService blacklistTokenService;
     private final AuthUserRepository authUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserProjectionRepository userProjectionRepo;
     // 통신 관련
     private final UserClient userClient;
     private final ObjectMapper objectMapper;
     private final OutboxRepository outboxRepo;
-    private final ApplicationEventPublisher eventPublisher;
+
+    private final EntityManager entityManager;
 
     public SignupResponse signup(SignupRequest req) {
         // 유저 비활성화 여부 확인
@@ -76,7 +80,7 @@ public class AuthService {
                         .password(passwordEncoder.encode(req.getPassword()))
                         .build()
         );
-
+        entityManager.flush();
         // Outbox 이벤트 생성 (User & Employee가 구독)
         AuthUserSignedUpEvent evt = AuthUserSignedUpEvent.builder()
                 .eventId(UUID.randomUUID().toString())
@@ -150,29 +154,24 @@ public class AuthService {
             throw new UnauthorizedException(ErrorStatus.INVALID_USER_PASSWORD);
         }
 
-        LoginUserResponse verifyResponse;
-        try {
-            verifyResponse = userClient.verifyWorkspace(
-                    LoginUserRequest.builder()
-                            .userId(authUser.getId())
-                            .workspace(req.getWorkspace())
-                            .build()
-            );
-        } catch (FeignException e) {
-            int status = e.status();
-            if (status == 404)
-                throw new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_WORKSPACE);
-            if (status >= 400 && status < 500)
-                throw new BadRequestException(ErrorStatus.INVALID_REQUEST);
-            throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
-        } catch (ResourceAccessException e) {
-            throw new InternalServerErrorException(ErrorStatus.FAILED_CONNECTION);
-        }
+        UserProjection userProjection = userProjectionRepo.findByUserId(authUser.getId())
+                .orElse(null);
+        if (userProjection == null) {
+            log.warn("[AuthService] UserProjection not found for userId={}, temporary bypass", authUser.getId());
+        } else {
+            // 기존 workspace, status 검증
+            // 워크스페이스 일치 여부 확인
+            if (!Objects.equals(req.getWorkspace(), userProjection.getWorkspace())) {
+                throw new BadRequestException(ErrorStatus.INVALID_WORKSPACE_TYPE);
+            }
 
-        if (verifyResponse == null)
-            throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
-        if (!verifyResponse.isValid())
-            throw new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_WORKSPACE);
+            switch (userProjection.getEmployeeStatus()) {
+                case RETIRED, LEAVE -> throw new UnauthorizedException(ErrorStatus.DEACTIVATED_USER);
+                case ACTIVE -> {
+                } // 통과
+                default -> throw new UnauthorizedException(ErrorStatus.INVALID_EMPSTATUS_TYPE);
+            }
+        }
 
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
         refreshTokenService.deleteAllByUser(authUser.getId());

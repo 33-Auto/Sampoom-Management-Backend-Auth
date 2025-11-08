@@ -14,7 +14,7 @@ import static com.sampoom.auth.common.entity.Role.USER;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AuthUser extends SoftDeleteEntity {
+public class AuthUser extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,11 +32,11 @@ public class AuthUser extends SoftDeleteEntity {
     private Role role = USER;
 
     @Version
+    @Column(nullable = false)
     private Long version; // 낙관적 락 & 이벤트 버전 관리
 
     @PrePersist
     public void prePersist() {
-
         if (this.role == null) this.role = USER;
         if (version == null) version = 0L;
     }
