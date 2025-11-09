@@ -29,7 +29,9 @@ public class UserEventHandler {
             JsonNode root = objectMapper.readTree(message);
             String eventType = root.get("eventType").asText();
             switch (eventType) {
-                case "EmployeeUpdated": {
+                case "EmployeeUpdated":
+                case "UserCreated":
+                {
                     UserEvent event = objectMapper.treeToValue(root, UserEvent.class);
                     userProjectionService.apply(event);
                     break;
