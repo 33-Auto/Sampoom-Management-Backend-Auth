@@ -16,9 +16,4 @@ public class UserClientFallback implements UserClient {
     public void createProfile(@RequestBody SignupUser req) {
         throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
     }
-
-    @Override
-    public LoginUserResponse verifyWorkspace(@RequestBody LoginUserRequest req) {
-        throw new InternalServerErrorException(ErrorStatus.INTERNAL_SERVER_ERROR);
-    }
 }
