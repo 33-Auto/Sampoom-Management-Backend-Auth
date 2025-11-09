@@ -20,7 +20,4 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface UserClient {
     @PostMapping("/internal/profile")
     void createProfile(@Valid @RequestBody SignupUser req);
-
-    @PostMapping("/internal/verify")
-    LoginUserResponse verifyWorkspace(@Valid @RequestBody LoginUserRequest req);
 }
