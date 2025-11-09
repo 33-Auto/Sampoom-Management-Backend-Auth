@@ -104,7 +104,7 @@ public class UserProjectionService {
     }
 
     private OffsetDateTime parseOffset(String iso) {
-        if (iso == null || iso.isBlank()) return null;
+        if (iso == null || iso.equalsIgnoreCase("null") || iso.isBlank()) return null;
         try {
             return OffsetDateTime.parse(iso);
         } catch (Exception ex) {
