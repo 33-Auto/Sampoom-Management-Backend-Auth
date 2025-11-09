@@ -44,6 +44,7 @@ public class UserProjectionService {
 
         switch (e.getEventType()) {
             case "EmployeeUpdated":
+            case "UserCreated":
                 upsert(projection, e, incomingVer);
                 break;
             default:
