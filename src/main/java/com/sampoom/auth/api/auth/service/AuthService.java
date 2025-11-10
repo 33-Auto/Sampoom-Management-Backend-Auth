@@ -12,7 +12,8 @@ import com.sampoom.auth.api.auth.internal.dto.SignupUser;
 import com.sampoom.auth.api.auth.outbox.OutboxEvent;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
 import com.sampoom.auth.api.auth.outbox.OutboxRepository;
-import com.sampoom.auth.common.entity.MemberRole;
+import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.entity.Workspace;
 import com.sampoom.auth.common.exception.*;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.dto.request.LoginRequest;
@@ -75,7 +76,6 @@ public class AuthService {
                 AuthUser.builder()
                         .email(req.getEmail())
                         .password(passwordEncoder.encode(req.getPassword()))
-                        .role(req.getRole())
                         .build()
         );
 
@@ -115,7 +115,7 @@ public class AuthService {
             userClient.createProfile(SignupUser.builder()
                     .userId(authUser.getId())
                     .userName(req.getUserName())
-                    .role(req.getRole())
+                    .workspace(req.getWorkspace())
                     .branch(req.getBranch())
                     .position(req.getPosition())
                     .build());
@@ -141,7 +141,6 @@ public class AuthService {
         return SignupResponse.builder()
                 .userId(authUser.getId())
                 .userName(req.getUserName())
-                .role(req.getRole())
                 .email(req.getEmail())
                 .build();
         }
@@ -176,8 +175,8 @@ public class AuthService {
 
         // 토큰 발급
         String jti = UUID.randomUUID().toString();
-        String access = jwtProvider.createAccessToken(authUser.getId(), authUser.getRole(), jti);
-        String refresh = jwtProvider.createRefreshToken(authUser.getId(), authUser.getRole(), jti);
+        String access = jwtProvider.createAccessToken(authUser.getId(), userProjection.getWorkspace(),authUser.getRole(), jti);
+        String refresh = jwtProvider.createRefreshToken(authUser.getId(), userProjection.getWorkspace(),authUser.getRole(), jti);
 
         // 리프레시 토큰 저장
         refreshTokenService.save(authUser.getId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
@@ -222,12 +221,13 @@ public class AuthService {
         refreshTokenService.deleteAllByUser(userId);
 
         // 토큰에서 바로 정보 꺼내기 (DB 조회)
-        MemberRole role = MemberRole.valueOf(refreshClaims.get("role", String.class));
+        Role role = Role.valueOf(refreshClaims.get("role", String.class));
+        Workspace workspace = Workspace.valueOf(refreshClaims.get("workspace", String.class));
 
         // 새로운 Access/Refresh 토큰 생성
         String newJti = UUID.randomUUID().toString();
-        String newAccessToken = jwtProvider.createAccessToken(userId, role, newJti);
-        String newRefreshToken = jwtProvider.createRefreshToken(userId, role, newJti);
+        String newAccessToken = jwtProvider.createAccessToken(userId, workspace, role, newJti);
+        String newRefreshToken = jwtProvider.createRefreshToken(userId, workspace, role, newJti);
 
         // 새 Refresh 토큰 저장
         refreshTokenService.save(userId, newJti, newRefreshToken, Instant.now().plusSeconds(refreshTokenExpiration));
@@ -278,7 +278,7 @@ public class AuthService {
         if (userId == null || req==null || req.getRole() == null) {
             throw new BadRequestException(ErrorStatus.INVALID_INPUT_VALUE);
         }
-        MemberRole newRole = req.getRole();
+        Role newRole = req.getRole();
         AuthUser authUser = authUserRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_ID));
 

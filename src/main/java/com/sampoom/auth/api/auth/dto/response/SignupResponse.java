@@ -1,6 +1,6 @@
 package com.sampoom.auth.api.auth.dto.response;
 
-import com.sampoom.auth.common.entity.MemberRole;
+import com.sampoom.auth.common.entity.Workspace;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -9,6 +9,5 @@ import lombok.Getter;
 public class SignupResponse {
     private Long userId;
     private String userName;
-    private MemberRole role;
     private String email;
 }

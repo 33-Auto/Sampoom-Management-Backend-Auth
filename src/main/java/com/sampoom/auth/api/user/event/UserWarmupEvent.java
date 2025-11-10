@@ -1,5 +1,6 @@
 package com.sampoom.auth.api.user.event;
 import com.sampoom.auth.common.entity.EmployeeStatus;
+import com.sampoom.auth.common.entity.Workspace;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,6 +32,7 @@ public class UserWarmupEvent {
     public static class UserPayload {
         private Long userId;
         private EmployeeStatus employeeStatus;
+        private Workspace workspace;
         private Long version;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;

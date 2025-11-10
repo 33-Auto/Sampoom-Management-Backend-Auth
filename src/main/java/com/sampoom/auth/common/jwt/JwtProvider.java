@@ -1,6 +1,7 @@
 package com.sampoom.auth.common.jwt;
 
-import com.sampoom.auth.common.entity.MemberRole;
+import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.entity.Workspace;
 import com.sampoom.auth.common.exception.BadRequestException;
 import com.sampoom.auth.common.exception.CustomAuthenticationException;
 import com.sampoom.auth.common.exception.UnauthorizedException;
@@ -38,13 +39,14 @@ public class JwtProvider {
         return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
     }
 
-    public String createAccessToken(Long userId, MemberRole role, String jti) {
+    public String createAccessToken(Long userId, Workspace workspace, Role role, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)
                 .setSubject(String.valueOf(userId))
                 .claim("type", "access")
-                .claim("role", role.name())
+                .claim("workspace", workspace.name())
+                .claim("role",role.name())
                 .setId(jti)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(accessTtlSec)))
@@ -52,13 +54,14 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String createRefreshToken(Long userId, MemberRole role, String jti) {
+    public String createRefreshToken(Long userId, Workspace workspace, Role role,String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)
                 .setSubject(String.valueOf(userId))
                 .claim("type", "refresh")
-                .claim("role", role.name())
+                .claim("workspace", workspace.name())
+                .claim("role",role.name())
                 .setId(jti)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(refreshTtlSec)))
@@ -111,6 +114,7 @@ public class JwtProvider {
                 "type", "service"
         );
 
+        // 내부 서비스 접근 시도 만료 시간: 5분
         return Jwts.builder()
                 .setIssuer("auth-service")
                 .setSubject("auth-service")

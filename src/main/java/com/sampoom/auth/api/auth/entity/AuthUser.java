@@ -1,9 +1,11 @@
 package com.sampoom.auth.api.auth.entity;
 
 import com.sampoom.auth.common.entity.BaseTimeEntity;
-import com.sampoom.auth.common.entity.MemberRole;
+import com.sampoom.auth.common.entity.Role;
 import jakarta.persistence.*;
 import lombok.*;
+
+import static com.sampoom.auth.common.entity.Role.USER;
 
 
 @Entity
@@ -24,9 +26,10 @@ public class AuthUser extends BaseTimeEntity {
     @Column(nullable = false)
     private String password;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private MemberRole role;
+    private Role role = USER;
 
     @Version
     @Column(nullable = false)
@@ -34,6 +37,7 @@ public class AuthUser extends BaseTimeEntity {
 
     @PrePersist
     public void prePersist() {
+        if (this.role == null) this.role = USER;
         if (version == null) version = 0L;
     }
 
@@ -42,7 +46,7 @@ public class AuthUser extends BaseTimeEntity {
         if (version == null) version = 0L;
     }
 
-    public void setRole(MemberRole newRole) {
+    public void setRole(Role newRole) {
         this.role = newRole;
     }
 

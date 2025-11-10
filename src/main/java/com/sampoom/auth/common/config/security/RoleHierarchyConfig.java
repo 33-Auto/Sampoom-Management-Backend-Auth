@@ -17,6 +17,13 @@ public class RoleHierarchyConfig {
                 ROLE_ADMIN > ROLE_PURCHASE
                 ROLE_ADMIN > ROLE_HR
                 ROLE_ADMIN > ROLE_AGENCY
+                ROLE_MD > ROLE_USER
+                ROLE_SALES > ROLE_USER
+                ROLE_INVENTORY > ROLE_USER
+                ROLE_PRODUCTION > ROLE_USER
+                ROLE_PURCHASE > ROLE_USER
+                ROLE_HR > ROLE_USER
+                ROLE_AGENCY > ROLE_USER
                 """);
     }
 }

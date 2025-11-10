@@ -2,6 +2,7 @@ package com.sampoom.auth.api.user.entity;
 
 import com.sampoom.auth.common.entity.BaseTimeEntity;
 import com.sampoom.auth.common.entity.EmployeeStatus;
+import com.sampoom.auth.common.entity.Workspace;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,8 +20,12 @@ import java.time.OffsetDateTime;
 public class UserProjection extends BaseTimeEntity {
     @Id
     private Long userId;
+
     @Enumerated(EnumType.STRING)
     private EmployeeStatus employeeStatus;
+
+    @Enumerated(EnumType.STRING)
+    private Workspace workspace;
 
     private String lastEventId;
 

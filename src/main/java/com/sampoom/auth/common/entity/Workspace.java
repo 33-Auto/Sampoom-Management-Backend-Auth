@@ -1,6 +1,6 @@
 package com.sampoom.auth.common.entity;
 
-public enum MemberRole {
+public enum Workspace {
     // 웹
     MD,           // 기준 정보 관리 부서
     SALES,        // 판매 관리 부서
