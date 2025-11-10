@@ -215,8 +215,8 @@ public class AuthService {
             throw new UnauthorizedException(ErrorStatus.INVALID_TOKEN);
         }
 
-//        // 동일한 jti로
-//        blacklistTokenService.addJti(userId, jti, refreshClaims.getExpiration().toInstant());
+        // 동일한 jti로
+        blacklistTokenService.addJti(userId, jti, refreshClaims.getExpiration().toInstant());
 
         // (해당 유저만의) 기존 토큰 무효화 (단일 세션 유지)
         refreshTokenService.deleteAllByUser(userId);
@@ -269,7 +269,7 @@ public class AuthService {
         Long userId = Long.valueOf(claims.getSubject());
         // 기존 리프레시/엑세스 토큰 무효화
         refreshTokenService.deleteAllByUser(userId);
-//        blacklistTokenService.add(accessToken, claims);
+        blacklistTokenService.add(accessToken, claims);
     }
 
     @Transactional

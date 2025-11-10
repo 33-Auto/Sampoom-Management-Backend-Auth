@@ -51,12 +51,12 @@ public class JwtProvider {
             throw new BadRequestException(ErrorStatus.INVALID_PRIVATE_KEY);
         }
         try {
-            this.privateKey = loadPrivateKey(privateKeyBase64);
+            this.publicKey = loadPublicKey(publicKeyBase64);
         } catch (Exception e) {
             throw new BadRequestException(ErrorStatus.INVALID_PUBLIC_KEY);
         }
         try {
-            this.publicKey = loadPublicKey(publicKeyBase64);
+            this.privateKey = loadPrivateKey(privateKeyBase64);
         } catch (Exception e) {
             throw new BadRequestException(ErrorStatus.INVALID_PRIVATE_KEY);
         }
