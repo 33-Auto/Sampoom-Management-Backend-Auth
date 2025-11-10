@@ -40,6 +40,7 @@ public class AuthWarmupPublisher {
                                     u.getId(),
                                     u.getEmail(),
                                     u.getRole(),
+                                    u.getWorkspace(),
                                     u.getVersion(),
                                     u.getCreatedAt(),
                                     u.getUpdatedAt()

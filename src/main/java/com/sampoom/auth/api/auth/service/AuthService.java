@@ -76,6 +76,7 @@ public class AuthService {
                 AuthUser.builder()
                         .email(req.getEmail())
                         .password(passwordEncoder.encode(req.getPassword()))
+                        .workspace(req.getWorkspace())
                         .build()
         );
 
@@ -92,6 +93,7 @@ public class AuthService {
                         .userId(authUser.getId())
                         .email(authUser.getEmail())
                         .role(authUser.getRole())
+                        .workspace(authUser.getWorkspace())
                         .createdAt(authUser.getCreatedAt())
                         .build())
                 .build();
@@ -175,8 +177,8 @@ public class AuthService {
 
         // 토큰 발급
         String jti = UUID.randomUUID().toString();
-        String access = jwtProvider.createAccessToken(authUser.getId(), userProjection.getWorkspace(),authUser.getRole(), jti);
-        String refresh = jwtProvider.createRefreshToken(authUser.getId(), userProjection.getWorkspace(),authUser.getRole(), jti);
+        String access = jwtProvider.createAccessToken(authUser.getId(), authUser.getWorkspace(),authUser.getRole(), jti);
+        String refresh = jwtProvider.createRefreshToken(authUser.getId(), authUser.getWorkspace(),authUser.getRole(), jti);
 
         // 리프레시 토큰 저장
         refreshTokenService.save(authUser.getId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
@@ -285,7 +287,7 @@ public class AuthService {
         authUser.setRole(newRole);
 
         // version / updatedAt 필드가 즉시 반영되도록 flush
-        authUserRepository.saveAndFlush(authUser);
+        entityManager.flush();
 
         // Outbox 이벤트 생성 (User & Employee가 구독)
          AuthUserUpdatedEvent evt = AuthUserUpdatedEvent.builder()
@@ -297,6 +299,7 @@ public class AuthService {
                         .userId(authUser.getId())
                         .email(authUser.getEmail())
                         .role(authUser.getRole())
+                        .workspace(authUser.getWorkspace())
                         .updatedAt(authUser.getUpdatedAt())
                         .build())
                 .build();

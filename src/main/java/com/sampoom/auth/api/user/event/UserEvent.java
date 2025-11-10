@@ -28,8 +28,6 @@ public class UserEvent {
         private Long userId;
         @NotNull
         private EmployeeStatus employeeStatus;
-        @NotNull
-        private Workspace workspace;
 
         private LocalDateTime updatedAt;
     }

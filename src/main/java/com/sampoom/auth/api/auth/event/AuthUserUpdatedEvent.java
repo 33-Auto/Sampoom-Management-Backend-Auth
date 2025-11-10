@@ -32,6 +32,8 @@ public class AuthUserUpdatedEvent {
         @NotNull
         private String email;
         @NotNull
+        private Workspace workspace;
+        @NotNull
         private Role role;
         @NotNull
         private LocalDateTime updatedAt;

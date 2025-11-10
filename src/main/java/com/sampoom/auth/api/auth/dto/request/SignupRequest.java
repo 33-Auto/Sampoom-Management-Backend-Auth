@@ -22,12 +22,14 @@ public class SignupRequest {
     @Size(min = 8, max = 64)
     private String password;
 
+    @NotBlank
+    private Workspace workspace;
+
     // User(Profile)
     @NotBlank
     private String userName;
 
     // Employee
-    private Workspace workspace;
     private String branch;
     private Position position;
 }

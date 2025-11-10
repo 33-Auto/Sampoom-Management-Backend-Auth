@@ -2,6 +2,7 @@ package com.sampoom.auth.api.auth.entity;
 
 import com.sampoom.auth.common.entity.BaseTimeEntity;
 import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.entity.Workspace;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,6 +31,10 @@ public class AuthUser extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role = USER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Workspace workspace;
 
     @Version
     @Column(nullable = false)

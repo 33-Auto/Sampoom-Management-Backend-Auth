@@ -2,6 +2,7 @@ package com.sampoom.auth.api.auth.event;
 
 import com.sampoom.auth.common.entity.Role;
 import com.sampoom.auth.common.entity.Workspace;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,6 +29,7 @@ public class AuthWarmupEvent {
         private Long userId;
         private String email;
         private Role role;
+        private Workspace workspace;
         private Long version;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
