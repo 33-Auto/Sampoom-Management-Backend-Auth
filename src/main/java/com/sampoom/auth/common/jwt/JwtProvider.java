@@ -29,7 +29,7 @@ public class JwtProvider {
     @Value("${jwt.issuer}")
     private String issuer;
 
-    //    @Value("${jwt.secret}")
+//        @Value("${jwt.secret}")
 //    private String secret;
     private final PrivateKey privateKey;
     private final PublicKey publicKey;
