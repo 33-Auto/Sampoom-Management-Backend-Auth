@@ -10,7 +10,12 @@ public class RoleHierarchyConfig {
     @Bean
     public RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.fromHierarchy("""
-                ROLE_ADMIN > ROLE_USER
+                ROLE_ADMIN > ROLE_MD
+                ROLE_ADMIN > ROLE_SALES
+                ROLE_ADMIN > ROLE_INVENTORY
+                ROLE_ADMIN > ROLE_PRODUCTION
+                ROLE_ADMIN > ROLE_PURCHASE
+                ROLE_ADMIN > ROLE_HR
                 """);
     }
 }
