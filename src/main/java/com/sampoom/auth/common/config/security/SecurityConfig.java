@@ -20,7 +20,7 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,CustomAuthEntryPoint customAuthEntryPoint) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,CustomAuthEntryPoint customAuthEntryPoint, CustomAccessDeniedHandler customAccessDeniedHandler) throws Exception {
         http
                 .logout(logout -> logout.disable())
                 // CodeQL [java/spring-disabled-csrf-protection]: suppress - Stateless JWT API라 CSRF 불필요
@@ -61,6 +61,8 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         // 인증 실패 시 INVALID_TOKEN
                         .authenticationEntryPoint(customAuthEntryPoint)
+                        // 인가 실패 시 ACCESS_DENIED
+                        .accessDeniedHandler(customAccessDeniedHandler)
                 );
         return http.build();
     }

@@ -14,8 +14,14 @@ import org.springframework.stereotype.Component;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 
@@ -24,8 +30,10 @@ public class JwtProvider {
     @Value("${jwt.issuer}")
     private String issuer;
 
-    @Value("${jwt.secret}")
-    private String secret;
+//    @Value("${jwt.secret}")
+//    private String secret;
+    private final PrivateKey privateKey;
+    private final PublicKey publicKey;
 
     @Value("${jwt.access-ttl-seconds}")
     private long accessTtlSec;
@@ -33,10 +41,29 @@ public class JwtProvider {
     @Value("${jwt.refresh-ttl-seconds}")
     private long refreshTtlSec;
 
-    private Key getKey() {
-        // secret 문자열을 HS256용 Key 객체로 변환
-        return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
+    public JwtProvider(
+            @Value("${jwt.private-key-base64}") String privateKeyBase64,
+            @Value("${jwt.public-key-base64}") String publicKeyBase64
+    ) throws Exception {
+        this.privateKey = loadPrivateKey(privateKeyBase64);
+        this.publicKey = loadPublicKey(publicKeyBase64);
     }
+
+    private PrivateKey loadPrivateKey(String base64) throws Exception {
+        byte[] keyBytes = Base64.getDecoder().decode(base64);
+        return KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
+    }
+
+    private PublicKey loadPublicKey(String base64) throws Exception {
+        byte[] keyBytes = Base64.getDecoder().decode(base64);
+        return KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(keyBytes));
+    }
+
+
+//    private Key getKey() {
+//        // secret 문자열을 HS256용 Key 객체로 변환
+//        return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
+//    }
 
     public String createAccessToken(Long userId, Role role, String jti) {
         Instant now = Instant.now();
@@ -48,7 +75,7 @@ public class JwtProvider {
                 .setId(jti)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(accessTtlSec)))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .signWith(privateKey, SignatureAlgorithm.RS256)
                 .compact();
     }
 
@@ -62,7 +89,7 @@ public class JwtProvider {
                 .setId(jti)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(refreshTtlSec)))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .signWith(privateKey, SignatureAlgorithm.RS256)
                 .compact();
     }
 
@@ -91,7 +118,7 @@ public class JwtProvider {
             throw new BadRequestException(ErrorStatus.BLANK_TOKEN);
         }
         try{
-            return Jwts.parserBuilder().setSigningKey(getKey()).build()
+            return Jwts.parserBuilder().setSigningKey(publicKey).build()
                     .parseClaimsJws(token).getBody();
         }
         catch (ExpiredJwtException e) {
@@ -117,7 +144,7 @@ public class JwtProvider {
                 .setClaims(claims)
                 .setIssuedAt(new Date())
                 .setExpiration(Date.from(Instant.now().plus(Duration.ofMinutes(5))))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .signWith(privateKey, SignatureAlgorithm.RS256)
                 .compact();
     }
 }

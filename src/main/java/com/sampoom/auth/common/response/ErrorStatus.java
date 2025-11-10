@@ -26,6 +26,7 @@ public enum ErrorStatus {
     DEACTIVATED_USER(HttpStatus.UNAUTHORIZED, "비활성화된 유저입니다.(LEAVE/RETIRED)", 11411),
 
     // 403 FORBIDDEN
+    ACCESS_DENIED(HttpStatus.FORBIDDEN,"접근 권한이 없어 접근이 거부되었습니다.",11430),
 
     // 404 NOT_FOUND
     NOT_FOUND_USER_BY_ID(HttpStatus.NOT_FOUND, "유저 고유 번호(userId)로 해당 유저를 찾을 수 없습니다.", 11440),
