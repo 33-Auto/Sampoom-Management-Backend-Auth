@@ -16,9 +16,13 @@ public class UserWarmupEvent {
     private String eventId;
     private String eventType; // "UserSystemWarmup"
     private String occurredAt;
-    private List<UserPayload> factoryEmployees;
-    private List<UserPayload> warehouseEmployees;
-    private List<UserPayload> agencyEmployees;
+    private List<UserPayload> prodMembers;
+    private List<UserPayload> invenMembers;
+    private List<UserPayload> agencyMembers;
+    private List<UserPayload> purchaseMembers;
+    private List<UserPayload> salesMembers;
+    private List<UserPayload> mdMembers;
+    private List<UserPayload> hrMembers;
 
     @Getter
     @Builder

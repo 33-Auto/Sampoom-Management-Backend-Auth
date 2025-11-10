@@ -2,7 +2,6 @@ package com.sampoom.auth.api.auth.internal.client;
 
 import com.sampoom.auth.api.auth.internal.config.InternalFeignConfig;
 import com.sampoom.auth.api.auth.internal.dto.SignupUser;
-import com.sampoom.auth.common.response.ApiResponse;
 import com.sampoom.auth.api.auth.internal.fallback.UserClientFallback;
 import jakarta.validation.Valid;
 import org.springframework.cloud.openfeign.FeignClient;
