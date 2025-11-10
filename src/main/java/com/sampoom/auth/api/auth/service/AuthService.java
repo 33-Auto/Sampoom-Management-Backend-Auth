@@ -38,6 +38,8 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.sampoom.auth.common.entity.Workspace.AGENCY;
+
 @Slf4j
 @Transactional
 @Service
@@ -114,11 +116,15 @@ public class AuthService {
 
         // User 프로필 생성 ( 이메일, 비밀번호를 제외한 User 기본 정보 )
         try {
+            String branch = null;
+            if(req.getWorkspace()==AGENCY){
+                branch=req.getBranch();
+            }
             userClient.createProfile(SignupUser.builder()
                     .userId(authUser.getId())
                     .userName(req.getUserName())
                     .workspace(req.getWorkspace())
-                    .branch(req.getBranch())
+                    .branch(branch)
                     .position(req.getPosition())
                     .build());
         }
