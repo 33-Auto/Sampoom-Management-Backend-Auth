@@ -1,7 +1,7 @@
 package com.sampoom.auth.api.auth.dto.response;
 
 
-import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.entity.MemberRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,5 +13,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class RoleResponse {
     private Long userId;
-    private Role role;
+    private MemberRole role;
 }

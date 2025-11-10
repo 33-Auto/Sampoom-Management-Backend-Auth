@@ -1,6 +1,6 @@
 package com.sampoom.auth.common.jwt;
 
-import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.entity.MemberRole;
 import com.sampoom.auth.common.exception.BadRequestException;
 import com.sampoom.auth.common.exception.CustomAuthenticationException;
 import com.sampoom.auth.common.exception.UnauthorizedException;
@@ -38,7 +38,7 @@ public class JwtProvider {
         return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
     }
 
-    public String createAccessToken(Long userId, Role role, String jti) {
+    public String createAccessToken(Long userId, MemberRole role, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)
@@ -52,7 +52,7 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String createRefreshToken(Long userId, Role role, String jti) {
+    public String createRefreshToken(Long userId, MemberRole role, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setIssuer(issuer)

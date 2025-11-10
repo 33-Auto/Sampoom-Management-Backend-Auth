@@ -1,6 +1,6 @@
 package com.sampoom.auth.api.auth.event;
 
-import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.entity.MemberRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,7 +26,7 @@ public class AuthWarmupEvent {
     public static class AuthUserPayload {
         private Long userId;
         private String email;
-        private Role role;
+        private MemberRole role;
         private Long version;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;

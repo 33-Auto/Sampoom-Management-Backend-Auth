@@ -1,6 +1,6 @@
 package com.sampoom.auth.api.auth.event;
 
-import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.entity.MemberRole;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,7 +31,7 @@ public class AuthUserUpdatedEvent {
         @NotNull
         private String email;
         @NotNull
-        private Role role;
+        private MemberRole role;
         @NotNull
         private LocalDateTime updatedAt;
     }

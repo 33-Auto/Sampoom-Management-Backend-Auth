@@ -1,16 +1,13 @@
 package com.sampoom.auth.common.jwt;
 
 import com.sampoom.auth.common.config.security.CustomAuthEntryPoint;
-import com.sampoom.auth.common.entity.Role;
-import com.sampoom.auth.common.exception.BadRequestException;
+import com.sampoom.auth.common.entity.MemberRole;
 import com.sampoom.auth.common.exception.CustomAuthenticationException;
-import com.sampoom.auth.common.exception.UnauthorizedException;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.service.BlacklistTokenService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -84,9 +81,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 throw new CustomAuthenticationException(ErrorStatus.INVALID_TOKEN);
             }
 
-            Role role;
+            MemberRole role;
             try {
-                role = Role.valueOf(roleStr);
+                role = MemberRole.valueOf(roleStr);
             } catch (IllegalArgumentException ex) {
                 throw new CustomAuthenticationException(ErrorStatus.INVALID_TOKEN);
             }

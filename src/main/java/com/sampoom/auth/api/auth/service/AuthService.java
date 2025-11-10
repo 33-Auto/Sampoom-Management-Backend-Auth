@@ -12,7 +12,7 @@ import com.sampoom.auth.api.auth.internal.dto.SignupUser;
 import com.sampoom.auth.api.auth.outbox.OutboxEvent;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
 import com.sampoom.auth.api.auth.outbox.OutboxRepository;
-import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.entity.MemberRole;
 import com.sampoom.auth.common.exception.*;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.dto.request.LoginRequest;
@@ -34,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -223,7 +222,7 @@ public class AuthService {
         refreshTokenService.deleteAllByUser(userId);
 
         // 토큰에서 바로 정보 꺼내기 (DB 조회)
-        Role role = Role.valueOf(refreshClaims.get("role", String.class));
+        MemberRole role = MemberRole.valueOf(refreshClaims.get("role", String.class));
 
         // 새로운 Access/Refresh 토큰 생성
         String newJti = UUID.randomUUID().toString();
@@ -279,7 +278,7 @@ public class AuthService {
         if (userId == null || req==null || req.getRole() == null) {
             throw new BadRequestException(ErrorStatus.INVALID_INPUT_VALUE);
         }
-        Role newRole = req.getRole();
+        MemberRole newRole = req.getRole();
         AuthUser authUser = authUserRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_ID));
 

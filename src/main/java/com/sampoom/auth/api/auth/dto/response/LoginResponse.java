@@ -1,6 +1,5 @@
 package com.sampoom.auth.api.auth.dto.response;
 
-import com.sampoom.auth.common.entity.Role;
 import lombok.*;
 
 @Getter
