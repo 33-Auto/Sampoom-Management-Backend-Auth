@@ -11,12 +11,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
@@ -30,7 +29,7 @@ public class JwtProvider {
     @Value("${jwt.issuer}")
     private String issuer;
 
-//    @Value("${jwt.secret}")
+    //    @Value("${jwt.secret}")
 //    private String secret;
     private final PrivateKey privateKey;
     private final PublicKey publicKey;
@@ -44,26 +43,57 @@ public class JwtProvider {
     public JwtProvider(
             @Value("${jwt.private-key-base64}") String privateKeyBase64,
             @Value("${jwt.public-key-base64}") String publicKeyBase64
-    ) throws Exception {
-        this.privateKey = loadPrivateKey(privateKeyBase64);
-        this.publicKey = loadPublicKey(publicKeyBase64);
+    ) {
+        if (publicKeyBase64 == null || publicKeyBase64.isBlank()) {
+            throw new BadRequestException(ErrorStatus.INVALID_PUBLIC_KEY);
+        }
+        if (privateKeyBase64 == null || privateKeyBase64.isBlank()) {
+            throw new BadRequestException(ErrorStatus.INVALID_PRIVATE_KEY);
+        }
+        try {
+            this.privateKey = loadPrivateKey(privateKeyBase64);
+        } catch (Exception e) {
+            throw new BadRequestException(ErrorStatus.INVALID_PUBLIC_KEY);
+        }
+        try {
+            this.publicKey = loadPublicKey(publicKeyBase64);
+        } catch (Exception e) {
+            throw new BadRequestException(ErrorStatus.INVALID_PRIVATE_KEY);
+        }
+
     }
 
     private PrivateKey loadPrivateKey(String base64) throws Exception {
-        byte[] keyBytes = Base64.getDecoder().decode(base64);
-        return KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(base64);
+            PrivateKey key = KeyFactory.getInstance("RSA")
+                    .generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
+            if (key instanceof RSAPrivateKey rsaKey) {
+                if (rsaKey.getModulus().bitLength() < 2048) {
+                    throw new BadRequestException(ErrorStatus.SHORT_PRIVATE_KEY);
+                }
+            }
+            return key;
+        } catch ( Exception e) {
+            throw new BadRequestException(ErrorStatus.INVALID_PRIVATE_KEY);
+        }
     }
 
-    private PublicKey loadPublicKey(String base64) throws Exception {
-        byte[] keyBytes = Base64.getDecoder().decode(base64);
-        return KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(keyBytes));
+    private PublicKey loadPublicKey(String base64) {
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(base64);
+            PublicKey key = KeyFactory.getInstance("RSA")
+                    .generatePublic(new X509EncodedKeySpec(keyBytes));
+            if (key instanceof RSAPublicKey rsaKey) {
+                if (rsaKey.getModulus().bitLength() < 2048) {
+                    throw new BadRequestException(ErrorStatus.SHORT_PUBLIC_KEY);
+                }
+            }
+            return key;
+        }  catch (Exception e) {
+            throw new BadRequestException(ErrorStatus.INVALID_PUBLIC_KEY);
+        }
     }
-
-
-//    private Key getKey() {
-//        // secret 문자열을 HS256용 Key 객체로 변환
-//        return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
-//    }
 
     public String createAccessToken(Long userId, Role role, String jti) {
         Instant now = Instant.now();
@@ -111,20 +141,15 @@ public class JwtProvider {
     }
 
     public Claims parse(String token) {
-        if (token == null) {
-            throw new BadRequestException(ErrorStatus.NULL_TOKEN);
+        if (token == null || token.isBlank()) {
+            throw new BadRequestException(ErrorStatus.NULL_BLANK_TOKEN);
         }
-        if (token.isBlank()){
-            throw new BadRequestException(ErrorStatus.BLANK_TOKEN);
-        }
-        try{
+        try {
             return Jwts.parserBuilder().setSigningKey(publicKey).build()
                     .parseClaimsJws(token).getBody();
-        }
-        catch (ExpiredJwtException e) {
+        } catch (ExpiredJwtException e) {
             throw new CustomAuthenticationException(ErrorStatus.EXPIRED_TOKEN);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // 잘못된 형식 or 위조된 토큰
             throw new CustomAuthenticationException(ErrorStatus.INVALID_TOKEN);
         }

@@ -10,13 +10,16 @@ import org.springframework.http.HttpStatus;
 public enum ErrorStatus {
 
     // 400 BAD_REQUEST
+    SHORT_PUBLIC_KEY(HttpStatus.BAD_REQUEST, "서명용 공개키의 길이가 짧습니다. 적어도 2048바이트 이상으로 설정하세요.", 12401),
+    SHORT_PRIVATE_KEY(HttpStatus.BAD_REQUEST, "서명용 개인키의 길이가 짧습니다. 적어도 2048바이트 이상으로 설정하세요.", 12402),
     NULL_EXPIRATION(HttpStatus.BAD_REQUEST, "누락(Null)된 만료날짜입니다.", 12403),
-    NULL_TOKEN(HttpStatus.BAD_REQUEST,"토큰 값은 Null이면 안됩니다.",12401),
-    BLANK_TOKEN(HttpStatus.BAD_REQUEST,"토큰 값은 공백이면 안됩니다.",12400),
+    NULL_BLANK_TOKEN(HttpStatus.BAD_REQUEST,"토큰 값은 Null 또는 공백이면 안됩니다.",12400),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청의 형식, 타입, 파라미터 등이 맞지 않습니다.",11400),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST,"요청의 파라미터 입력 값이 유효하지 않습니다.",11402),
     INVALID_WORKSPACE_TYPE(HttpStatus.BAD_REQUEST, "유효하지 않은 조직(workspace) 타입입니다.", 11401),
     INVALID_EMPSTATUS_TYPE(HttpStatus.BAD_REQUEST,"유효하지 않은 직원 상태(EmployeeStatus) 타입입니다.",11404),
+    INVALID_PUBLIC_KEY(HttpStatus.BAD_REQUEST,"서명용 공개키가 유효하지 않거나 불러오는데 실패했습니다.",12406),
+    INVALID_PRIVATE_KEY(HttpStatus.BAD_REQUEST,"서명용 개인키가 유효하지 않거나 불러오는데 실패했습니다.",12407),
 
     // 401 UNAUTHORIZED
     INVALID_USER_PASSWORD(HttpStatus.UNAUTHORIZED, "유효하지 않은 비밀번호입니다.",11410),
