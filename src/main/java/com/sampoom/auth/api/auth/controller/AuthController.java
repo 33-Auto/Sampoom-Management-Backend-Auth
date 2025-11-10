@@ -4,7 +4,6 @@
     import com.sampoom.auth.api.auth.dto.request.SignupRequest;
     import com.sampoom.auth.api.auth.dto.response.RoleResponse;
     import com.sampoom.auth.api.auth.dto.response.SignupResponse;
-    import com.sampoom.auth.common.entity.Workspace;
     import com.sampoom.auth.common.exception.UnauthorizedException;
     import com.sampoom.auth.common.response.ApiResponse;
     import com.sampoom.auth.common.response.ErrorStatus;
@@ -13,7 +12,6 @@
     import com.sampoom.auth.api.auth.dto.request.RefreshRequest;
     import com.sampoom.auth.api.auth.dto.response.LoginResponse;
     import com.sampoom.auth.api.auth.dto.response.RefreshResponse;
-    import com.sampoom.auth.common.jwt.JwtAuthFilter;
     import com.sampoom.auth.common.jwt.JwtProvider;
     import com.sampoom.auth.api.auth.service.AuthService;
     import io.swagger.v3.oas.annotations.Operation;

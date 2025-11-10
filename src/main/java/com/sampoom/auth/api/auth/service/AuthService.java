@@ -28,11 +28,9 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.ResourceAccessException;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -78,14 +76,18 @@ public class AuthService {
                 AuthUser.builder()
                         .email(req.getEmail())
                         .password(passwordEncoder.encode(req.getPassword()))
+                        .role(req.getRole())
                         .build()
         );
+
+        // version 초기화
         entityManager.flush();
+
         // Outbox 이벤트 생성 (User & Employee가 구독)
         AuthUserSignedUpEvent evt = AuthUserSignedUpEvent.builder()
                 .eventId(UUID.randomUUID().toString())
                 .eventType("AuthUserSignedUp")
-                .occurredAt(java.time.OffsetDateTime.now().toString())
+                .occurredAt(OffsetDateTime.now().toString())
                 .version(authUser.getVersion())
                 .payload(AuthUserSignedUpEvent.Payload.builder()
                         .userId(authUser.getId())
@@ -114,7 +116,7 @@ public class AuthService {
             userClient.createProfile(SignupUser.builder()
                     .userId(authUser.getId())
                     .userName(req.getUserName())
-                    .workspace(req.getWorkspace())
+                    .role(req.getRole())
                     .branch(req.getBranch())
                     .position(req.getPosition())
                     .build());
@@ -139,13 +141,14 @@ public class AuthService {
         // 응답 DTO 반환
         return SignupResponse.builder()
                 .userId(authUser.getId())
-                .email(req.getEmail())
                 .userName(req.getUserName())
+                .role(req.getRole())
+                .email(req.getEmail())
                 .build();
         }
 
     public LoginResponse login(LoginRequest req) {
-        // user에 담자마자 이메일 존재 여부 체크
+        // authUser에 담자마자 이메일 존재 여부 체크
         AuthUser authUser = authUserRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new UnauthorizedException(ErrorStatus.NOT_FOUND_USER_BY_EMAIL));
 
@@ -156,15 +159,11 @@ public class AuthService {
 
         UserProjection userProjection = userProjectionRepo.findByUserId(authUser.getId())
                 .orElse(null);
-        if (userProjection == null) {
-            log.warn("[AuthService] UserProjection not found for userId={}, temporary bypass", authUser.getId());
-        } else {
-            // 기존 workspace, status 검증
-            // 워크스페이스 일치 여부 확인
-            if (!Objects.equals(req.getWorkspace(), userProjection.getWorkspace())) {
-                throw new BadRequestException(ErrorStatus.INVALID_WORKSPACE_TYPE);
-            }
 
+        // user_projection에 없어도 일시적으로 통과(갱신 지연)
+        if (userProjection == null) {
+            log.warn(" userId={}, 일시적 허용", authUser.getId());
+        } else {
             switch (userProjection.getEmployeeStatus()) {
                 case RETIRED, LEAVE -> throw new UnauthorizedException(ErrorStatus.DEACTIVATED_USER);
                 case ACTIVE -> {

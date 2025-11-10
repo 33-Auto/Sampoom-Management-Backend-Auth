@@ -1,6 +1,6 @@
 package com.sampoom.auth.api.auth.dto.request;
 
-import com.sampoom.auth.common.entity.Workspace;
+import com.sampoom.auth.common.entity.Role;
 import com.sampoom.auth.common.entity.Position;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -26,7 +26,7 @@ public class SignupRequest {
     private String userName;
 
     // Employee
-    private Workspace workspace;
+    private Role role;
     private String branch;
     private Position position;
 }

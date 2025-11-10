@@ -15,7 +15,6 @@ public enum ErrorStatus {
     BLANK_TOKEN(HttpStatus.BAD_REQUEST,"토큰 값은 공백이면 안됩니다.",12400),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청의 형식, 타입, 파라미터 등이 맞지 않습니다.",11400),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST,"요청의 파라미터 입력 값이 유효하지 않습니다.",11402),
-    INVALID_WORKSPACE_TYPE(HttpStatus.BAD_REQUEST, "유효하지 않은 조직(workspace) 타입입니다.", 11401),
     INVALID_EMPSTATUS_TYPE(HttpStatus.BAD_REQUEST,"유효하지 않은 직원 상태(EmployeeStatus) 타입입니다.",11404),
 
     // 401 UNAUTHORIZED
@@ -30,7 +29,7 @@ public enum ErrorStatus {
     // 404 NOT_FOUND
     NOT_FOUND_USER_BY_ID(HttpStatus.NOT_FOUND, "유저 고유 번호(userId)로 해당 유저를 찾을 수 없습니다.", 11440),
     NOT_FOUND_USER_BY_EMAIL(HttpStatus.NOT_FOUND, "이메일로 해당 유저를 찾을 수 없습니다.", 11442),
-    NOT_FOUND_USER_BY_WORKSPACE(HttpStatus.NOT_FOUND,"해당 조직 내에서 유저를 찾을 수 없습니다.",11441),
+
     // 409 CONFLICT
     DUPLICATED_USER_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 유저의 이메일입니다.", 11490),
 

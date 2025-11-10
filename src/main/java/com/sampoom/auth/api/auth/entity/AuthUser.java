@@ -6,7 +6,6 @@ import com.sampoom.auth.common.entity.SoftDeleteEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import static com.sampoom.auth.common.entity.Role.USER;
 
 @Entity
 @Table(name = "auth_user")
@@ -26,10 +25,9 @@ public class AuthUser extends BaseTimeEntity {
     @Column(nullable = false)
     private String password;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role = USER;
+    private Role role;
 
     @Version
     @Column(nullable = false)
@@ -37,7 +35,6 @@ public class AuthUser extends BaseTimeEntity {
 
     @PrePersist
     public void prePersist() {
-        if (this.role == null) this.role = USER;
         if (version == null) version = 0L;
     }
 
