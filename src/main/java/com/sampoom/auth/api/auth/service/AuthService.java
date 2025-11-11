@@ -28,11 +28,9 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.ResourceAccessException;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -250,10 +248,9 @@ public class AuthService {
             }
         }
         // APP
-        if (accessToken == null)
-            throw new UnauthorizedException(ErrorStatus.NULL_TOKEN);
-        if (accessToken.isBlank())
-            throw new UnauthorizedException(ErrorStatus.BLANK_TOKEN);
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new BadRequestException(ErrorStatus.NULL_BLANK_TOKEN);
+        }
 
         Claims claims;
         // 만료된 토큰도 블랙리스트 등록
@@ -267,7 +264,7 @@ public class AuthService {
         }
 
         if (claims == null) {
-            throw new UnauthorizedException(ErrorStatus.NULL_TOKEN);
+            throw new UnauthorizedException(ErrorStatus.NULL_BLANK_TOKEN);
         }
         Long userId = Long.valueOf(claims.getSubject());
         // 기존 리프레시/엑세스 토큰 무효화
