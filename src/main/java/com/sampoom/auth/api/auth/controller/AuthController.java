@@ -55,6 +55,14 @@
         <br>branch: 지점명(APP, AGENCY 전용), WEB은 아무값
         <br>userName: 이름
         <br>position: 직급
+        <br><br>***Workspace***
+        <br>PRODUCTION: 생산 관리 부서
+        <br>INVENTORY: 재고 관리 부서
+        <br>PURCHASE: 구매 관리 부서
+        <br>SALES: 판매 관리 부서
+        <br>MD: 기준 정보(Master Data) 관리 부서
+        <br>HR: 인사(Human Resources) 관리 부서
+        <br>AGENCY: 대리점(APP)
         """)
         @PostMapping("/signup")
         public ResponseEntity<ApiResponse<SignupResponse>> signup(@Valid @RequestBody SignupRequest req) {
