@@ -27,8 +27,6 @@ public class UserEvent {
         @NotNull
         private Long userId;
         @NotNull
-        private Workspace workspace;
-        @NotNull
         private EmployeeStatus employeeStatus;
 
         private LocalDateTime updatedAt;

@@ -1,6 +1,7 @@
 package com.sampoom.auth.api.user.event;
 import com.sampoom.auth.common.entity.EmployeeStatus;
 import com.sampoom.auth.common.entity.Workspace;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,18 +18,24 @@ public class UserWarmupEvent {
     private String eventId;
     private String eventType; // "UserSystemWarmup"
     private String occurredAt;
-    private List<UserPayload> factoryEmployees;
-    private List<UserPayload> warehouseEmployees;
-    private List<UserPayload> agencyEmployees;
+    private List<UserPayload> prodMembers;
+    private List<UserPayload> invenMembers;
+    private List<UserPayload> agencyMembers;
+    private List<UserPayload> purchaseMembers;
+    private List<UserPayload> salesMembers;
+    private List<UserPayload> mdMembers;
+    private List<UserPayload> hrMembers;
 
     @Getter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class UserPayload {
+        @NotNull
         private Long userId;
-        private Workspace workspace;
+        @NotNull
         private EmployeeStatus employeeStatus;
+
         private Long version;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;

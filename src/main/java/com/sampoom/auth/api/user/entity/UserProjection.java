@@ -22,9 +22,6 @@ public class UserProjection extends BaseTimeEntity {
     private Long userId;
 
     @Enumerated(EnumType.STRING)
-    private Workspace workspace;
-
-    @Enumerated(EnumType.STRING)
     private EmployeeStatus employeeStatus;
 
     private String lastEventId;

@@ -9,9 +9,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SignupUser {
-    private Long userId;       // Auth에서 생성한 userId
-    private String userName;   // 사용자 이름
-    private Workspace workspace;  // 근무지(대리점, 창고, 공장 등)
-    private String branch;     // 지점명
-    private Position position;   // 직책
+    private Long userId;             // Auth에서 생성한 userId
+    private String userName;         // 사용자 이름
+    private Workspace workspace;     // 근무지(대리점, 창고, 공장 등)
+    private String branch;           // 지점명
+    private Position position;       // 직책
 }

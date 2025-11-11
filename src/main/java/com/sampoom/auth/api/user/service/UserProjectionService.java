@@ -59,14 +59,12 @@ public class UserProjectionService {
         UserProjection next = (existing == null)
                 ? UserProjection.builder()
                 .userId(p.getUserId())
-                .workspace(p.getWorkspace())
                 .employeeStatus(p.getEmployeeStatus())
                 .lastEventId(e.getEventId())
                 .sourceUpdatedAt(parseOffset(String.valueOf(p.getUpdatedAt())))
                 .version(ver)
                 .build()
                 : existing.toBuilder()
-                .workspace(p.getWorkspace())
                 .employeeStatus(p.getEmployeeStatus())
                 .lastEventId(e.getEventId())
                 .sourceUpdatedAt(parseOffset(String.valueOf(p.getUpdatedAt())))
@@ -84,14 +82,17 @@ public class UserProjectionService {
         repo.deleteAllInBatch();
 
         var all = new ArrayList<UserWarmupEvent.UserPayload>();
-        all.addAll(event.getFactoryEmployees());
-        all.addAll(event.getWarehouseEmployees());
-        all.addAll(event.getAgencyEmployees());
+        all.addAll(event.getAgencyMembers());
+        all.addAll(event.getProdMembers());
+        all.addAll(event.getInvenMembers());
+        all.addAll(event.getPurchaseMembers());
+        all.addAll(event.getSalesMembers());
+        all.addAll(event.getMdMembers());
+        all.addAll(event.getHrMembers());
 
         for (var p : all) {
             UserProjection projection = UserProjection.builder()
                     .userId(p.getUserId())
-                    .workspace(p.getWorkspace())
                     .employeeStatus(p.getEmployeeStatus())
                     .version(p.getVersion())
                     .lastEventId(event.getEventId())

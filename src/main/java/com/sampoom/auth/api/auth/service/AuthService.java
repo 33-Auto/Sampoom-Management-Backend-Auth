@@ -13,6 +13,7 @@ import com.sampoom.auth.api.auth.outbox.OutboxEvent;
 import com.sampoom.auth.api.auth.repository.AuthUserRepository;
 import com.sampoom.auth.api.auth.outbox.OutboxRepository;
 import com.sampoom.auth.common.entity.Role;
+import com.sampoom.auth.common.entity.Workspace;
 import com.sampoom.auth.common.exception.*;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.dto.request.LoginRequest;
@@ -34,9 +35,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+
+import static com.sampoom.auth.common.entity.Workspace.AGENCY;
 
 @Slf4j
 @Transactional
@@ -76,19 +78,24 @@ public class AuthService {
                 AuthUser.builder()
                         .email(req.getEmail())
                         .password(passwordEncoder.encode(req.getPassword()))
+                        .workspace(req.getWorkspace())
                         .build()
         );
+
+        // version 초기화
         entityManager.flush();
+
         // Outbox 이벤트 생성 (User & Employee가 구독)
         AuthUserSignedUpEvent evt = AuthUserSignedUpEvent.builder()
                 .eventId(UUID.randomUUID().toString())
                 .eventType("AuthUserSignedUp")
-                .occurredAt(java.time.OffsetDateTime.now().toString())
+                .occurredAt(OffsetDateTime.now().toString())
                 .version(authUser.getVersion())
                 .payload(AuthUserSignedUpEvent.Payload.builder()
                         .userId(authUser.getId())
                         .email(authUser.getEmail())
                         .role(authUser.getRole())
+                        .workspace(authUser.getWorkspace())
                         .createdAt(authUser.getCreatedAt())
                         .build())
                 .build();
@@ -109,11 +116,15 @@ public class AuthService {
 
         // User 프로필 생성 ( 이메일, 비밀번호를 제외한 User 기본 정보 )
         try {
+            String branch = null;
+            if(req.getWorkspace()==AGENCY){
+                branch=req.getBranch();
+            }
             userClient.createProfile(SignupUser.builder()
                     .userId(authUser.getId())
                     .userName(req.getUserName())
                     .workspace(req.getWorkspace())
-                    .branch(req.getBranch())
+                    .branch(branch)
                     .position(req.getPosition())
                     .build());
         }
@@ -137,13 +148,13 @@ public class AuthService {
         // 응답 DTO 반환
         return SignupResponse.builder()
                 .userId(authUser.getId())
-                .email(req.getEmail())
                 .userName(req.getUserName())
+                .email(req.getEmail())
                 .build();
         }
 
     public LoginResponse login(LoginRequest req) {
-        // user에 담자마자 이메일 존재 여부 체크
+        // authUser에 담자마자 이메일 존재 여부 체크
         AuthUser authUser = authUserRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new UnauthorizedException(ErrorStatus.NOT_FOUND_USER_BY_EMAIL));
 
@@ -154,15 +165,11 @@ public class AuthService {
 
         UserProjection userProjection = userProjectionRepo.findByUserId(authUser.getId())
                 .orElse(null);
-        if (userProjection == null) {
-            log.warn("[AuthService] UserProjection not found for userId={}, temporary bypass", authUser.getId());
-        } else {
-            // 기존 workspace, status 검증
-            // 워크스페이스 일치 여부 확인
-            if (!Objects.equals(req.getWorkspace(), userProjection.getWorkspace())) {
-                throw new BadRequestException(ErrorStatus.INVALID_WORKSPACE_TYPE);
-            }
 
+        // user_projection에 없어도 일시적으로 통과(갱신 지연)
+        if (userProjection == null) {
+            log.warn(" userId={}, 일시적 허용", authUser.getId());
+        } else {
             switch (userProjection.getEmployeeStatus()) {
                 case RETIRED, LEAVE -> throw new UnauthorizedException(ErrorStatus.DEACTIVATED_USER);
                 case ACTIVE -> {
@@ -176,8 +183,8 @@ public class AuthService {
 
         // 토큰 발급
         String jti = UUID.randomUUID().toString();
-        String access = jwtProvider.createAccessToken(authUser.getId(), authUser.getRole(), jti);
-        String refresh = jwtProvider.createRefreshToken(authUser.getId(), authUser.getRole(), jti);
+        String access = jwtProvider.createAccessToken(authUser.getId(), authUser.getWorkspace(),authUser.getRole(), jti);
+        String refresh = jwtProvider.createRefreshToken(authUser.getId(), authUser.getWorkspace(),authUser.getRole(), jti);
 
         // 리프레시 토큰 저장
         refreshTokenService.save(authUser.getId(), jti, refresh, Instant.now().plusSeconds(refreshTokenExpiration));
@@ -223,11 +230,20 @@ public class AuthService {
 
         // 토큰에서 바로 정보 꺼내기 (DB 조회)
         Role role = Role.valueOf(refreshClaims.get("role", String.class));
+        String workspaceClaim = refreshClaims.get("workspace", String.class);
+        Workspace workspace;
+        if (workspaceClaim != null) {
+            workspace = Workspace.valueOf(workspaceClaim);
+        } else {
+            AuthUser authUser = authUserRepository.findById(userId)
+                    .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_ID));
+            workspace = authUser.getWorkspace();
+        }
 
         // 새로운 Access/Refresh 토큰 생성
         String newJti = UUID.randomUUID().toString();
-        String newAccessToken = jwtProvider.createAccessToken(userId, role, newJti);
-        String newRefreshToken = jwtProvider.createRefreshToken(userId, role, newJti);
+        String newAccessToken = jwtProvider.createAccessToken(userId, workspace, role, newJti);
+        String newRefreshToken = jwtProvider.createRefreshToken(userId, workspace, role, newJti);
 
         // 새 Refresh 토큰 저장
         refreshTokenService.save(userId, newJti, newRefreshToken, Instant.now().plusSeconds(refreshTokenExpiration));
@@ -284,7 +300,7 @@ public class AuthService {
         authUser.setRole(newRole);
 
         // version / updatedAt 필드가 즉시 반영되도록 flush
-        authUserRepository.saveAndFlush(authUser);
+        entityManager.flush();
 
         // Outbox 이벤트 생성 (User & Employee가 구독)
          AuthUserUpdatedEvent evt = AuthUserUpdatedEvent.builder()
@@ -296,6 +312,7 @@ public class AuthService {
                         .userId(authUser.getId())
                         .email(authUser.getEmail())
                         .role(authUser.getRole())
+                        .workspace(authUser.getWorkspace())
                         .updatedAt(authUser.getUpdatedAt())
                         .build())
                 .build();
