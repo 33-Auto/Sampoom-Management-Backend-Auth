@@ -23,6 +23,7 @@ public class SignupRequest {
     @Size(min = 8, max = 64)
     private String password;
 
+    @NotNull
     private Workspace workspace;
 
     // User(Profile)
