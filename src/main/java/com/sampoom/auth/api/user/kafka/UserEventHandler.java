@@ -64,7 +64,6 @@ public class UserEventHandler {
         catch (Exception e) {
             log.error("[AuthUserEventHandler] Kafka 이벤트 처리 실패", e);
             ack.acknowledge();
-            throw new InternalServerErrorException(ErrorStatus.EVENT_PROCESSING_FAILED);
         }
     }
 }
