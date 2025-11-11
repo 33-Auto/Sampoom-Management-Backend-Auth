@@ -230,7 +230,15 @@ public class AuthService {
 
         // 토큰에서 바로 정보 꺼내기 (DB 조회)
         Role role = Role.valueOf(refreshClaims.get("role", String.class));
-        Workspace workspace = Workspace.valueOf(refreshClaims.get("workspace", String.class));
+        String workspaceClaim = refreshClaims.get("workspace", String.class);
+        Workspace workspace;
+        if (workspaceClaim != null) {
+            workspace = Workspace.valueOf(workspaceClaim);
+        } else {
+            AuthUser authUser = authUserRepository.findById(userId)
+                    .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_USER_BY_ID));
+            workspace = authUser.getWorkspace();
+        }
 
         // 새로운 Access/Refresh 토큰 생성
         String newJti = UUID.randomUUID().toString();
