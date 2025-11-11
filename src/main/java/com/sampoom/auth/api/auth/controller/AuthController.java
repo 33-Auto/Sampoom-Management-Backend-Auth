@@ -47,14 +47,43 @@
         @Value("${jwt.refresh-ttl-seconds}")
         private long refreshTtlSeconds;
 
-        @Operation(summary = "회원가입", description = "회원가입을 통해 인증 정보를 담은 유저를 생성합니다.")
+        @Operation(summary = "회원가입", description = """
+        회원가입을 통해 인증 정보를 담은 유저를 생성합니다.
+        <br><br>email: 이메일(@필요)
+        <br>password: 비밀번호(8자~64자)
+        <br>workspace: 관리 부서
+        <br>branch: 지점명(APP, AGENCY 전용), WEB은 아무값
+        <br>userName: 이름
+        <br>position: 직급
+        <br><br>***Workspace***
+        <br>PRODUCTION: 생산 관리 부서
+        <br>INVENTORY: 재고 관리 부서
+        <br>PURCHASE: 구매 관리 부서
+        <br>SALES: 판매 관리 부서
+        <br>MD: 기준 정보(Master Data) 관리 부서
+        <br>HR: 인사(Human Resources) 관리 부서
+        <br>AGENCY: 대리점(APP)
+        """)
         @PostMapping("/signup")
         public ResponseEntity<ApiResponse<SignupResponse>> signup(@Valid @RequestBody SignupRequest req) {
             SignupResponse resp = authService.signup(req);
             return ApiResponse.success(SuccessStatus.CREATED, resp);
         }
 
-        @Operation(summary = "로그인", description = "로그인을 통해 토큰을 발급합니다.")
+
+        @Operation(summary = "로그인", description = """
+   
+    <br><br> 해당 회원의 이메일/비밀번호/관리 조직을 입력하세요.
+    <br>첫 생성 시 Role: USER로 생성되며, ADMIN으로 전환하려면 ADMIN 계정으로 해당 유저의 ID로 변경해야 합니다.
+    <br><br>***Workspace***
+    <br>PRODUCTION: 생산 관리 부서
+    <br>INVENTORY: 재고 관리 부서
+    <br>PURCHASE: 구매 관리 부서
+    <br>SALES: 판매 관리 부서
+    <br>MD: 기준 정보(Master Data) 관리 부서
+    <br>HR: 인사(Human Resources) 관리 부서
+    <br>AGENCY: 대리점(APP)
+    """)
         @PostMapping("/login")
         public ResponseEntity<ApiResponse<LoginResponse>> login(
                 @Valid @RequestBody LoginRequest req,
@@ -82,7 +111,10 @@
 
 
         @PostMapping("/refresh")
-        @Operation(summary = "토큰 재발급", description = "리프레시 토큰을 통해 토큰을 재발급합니다.")
+        @Operation(summary = "토큰 재발급", description = """
+        리프레시 토큰을 통해 토큰을 재발급합니다.
+        재로그인시 기존 리프레시/엑세스 토큰은 무효화됩니다.
+        """)
         public ResponseEntity<ApiResponse<RefreshResponse>> refresh(
                 @RequestBody(required = false) RefreshRequest refreshRequest,
                 HttpServletRequest request,
@@ -126,7 +158,9 @@
         }
 
         @PostMapping("/logout")
-        @Operation(summary = "로그아웃", description = "토큰을 초기화해 로그아웃합니다. 서버 측에 로그아웃 여부를 전달해야 할 때 명시적으로 사용합니다.")
+        @Operation(summary = "로그아웃", description = """
+        토큰을 초기화해 로그아웃합니다. 서버 측에 로그아웃 여부를 전달해야 할 때 명시적으로 사용합니다.
+        """)
         @SecurityRequirement(name = "bearerAuth")
         public ResponseEntity<ApiResponse<Void>> logout(
                 HttpServletRequest request,
