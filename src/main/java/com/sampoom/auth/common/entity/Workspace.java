@@ -8,6 +8,7 @@ public enum Workspace {
     PRODUCTION,   // 생산 관리 부서
     PURCHASE,     // 구매 관리 부서
     HR,           // 인사 관리 부서
+
     // 앱
-    AGENCY      // 대리점
+    AGENCY,       // 대리점
 }

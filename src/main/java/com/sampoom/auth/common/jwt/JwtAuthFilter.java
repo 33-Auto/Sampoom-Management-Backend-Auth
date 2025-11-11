@@ -55,11 +55,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         log.info("[DEBUG] path={} clientType={}", path, clientType);
 
         try {
-            if (accessToken == null) {
-                throw new CustomAuthenticationException(ErrorStatus.NULL_TOKEN);
-            }
-            if (accessToken.isBlank()) {
-                throw new CustomAuthenticationException(ErrorStatus.BLANK_TOKEN);
+            if (accessToken == null || accessToken.isBlank()) {
+                throw new BadRequestException(ErrorStatus.NULL_BLANK_TOKEN);
             }
             Claims claims = jwtProvider.parse(accessToken);
 
@@ -74,9 +71,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (jti == null || jti.isBlank()) {
                 throw new CustomAuthenticationException(ErrorStatus.INVALID_TOKEN);
             }
-            if (blacklistTokenService.isBlacklisted(jti)) {
-                throw new CustomAuthenticationException(ErrorStatus.INVALID_TOKEN);
-            }
+//            if (blacklistTokenService.isBlacklisted(jti)) {
+//                throw new CustomAuthenticationException(ErrorStatus.INVALID_TOKEN);
+//            }
 
             // 토큰에서 userId, role 가져오기
             String userId = claims.getSubject();
