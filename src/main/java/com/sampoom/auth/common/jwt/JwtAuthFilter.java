@@ -3,6 +3,7 @@ package com.sampoom.auth.common.jwt;
 import com.sampoom.auth.common.config.security.CustomAuthEntryPoint;
 import com.sampoom.auth.common.entity.Role;
 import com.sampoom.auth.common.entity.Workspace;
+import com.sampoom.auth.common.exception.BadRequestException;
 import com.sampoom.auth.common.exception.CustomAuthenticationException;
 import com.sampoom.auth.common.response.ErrorStatus;
 import com.sampoom.auth.api.auth.service.BlacklistTokenService;
