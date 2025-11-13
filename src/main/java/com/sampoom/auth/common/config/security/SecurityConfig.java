@@ -49,7 +49,7 @@ public class SecurityConfig {
         };
         http
                 .logout(logout -> logout.disable())
-                // CodeQL [java/spring-disabled-csrf-protection]: suppress - Stateless JWT API라 CSRF 불필요
+                // 웹 클라이언트에 대해 CSRF 보호 적용 (APP 클라이언트는 X-Client-Type 헤더로 제외)
                 .csrf(csrf -> csrf
                                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                                 .requireCsrfProtectionMatcher(csrfRequiredMatcher)
