@@ -12,6 +12,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
@@ -20,11 +22,38 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,CustomAuthEntryPoint customAuthEntryPoint, CustomAccessDeniedHandler customAccessDeniedHandler) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            JwtAuthFilter jwtAuthFilter,
+            CustomAuthEntryPoint customAuthEntryPoint,
+            CustomAccessDeniedHandler customAccessDeniedHandler
+    ) throws Exception {
+        // 플랫폼 구별 헤더(X-Client-Type)로 CSRF 분기
+        RequestMatcher csrfRequiredMatcher = request -> {
+            // 안전한 HTTP 메서드는 CSRF 검사 제외
+            String method = request.getMethod();
+            if ("GET".equalsIgnoreCase(method)
+                    || "HEAD".equalsIgnoreCase(method)
+                    || "OPTIONS".equalsIgnoreCase(method)) {
+                return false;
+            }
+
+            // APP 요청은 CSRF 제외
+            String clientType = request.getHeader("X-Client-Type");
+            if ("APP".equalsIgnoreCase(clientType)) {
+                return false;
+            }
+
+            // 그 외(WEB 등)는 CSRF 검사
+            return true;
+        };
         http
                 .logout(logout -> logout.disable())
                 // CodeQL [java/spring-disabled-csrf-protection]: suppress - Stateless JWT API라 CSRF 불필요
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf
+                                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                                .requireCsrfProtectionMatcher(csrfRequiredMatcher)
+                        )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/signup",
